@@ -202,7 +202,7 @@ static int cpu_hotplug_handler(struct notifier_block *nb,
 	case CPU_ONLINE:
 		if (!this_cpu->cur_freq)
 #if defined(CONFIG_ARCH_MSM8226) || defined(CONFIG_ARCH_MSM8610)
-			this_cpu->cur_freq = cpufreq_quick_get(cpu) * 1000;
+			this_cpu->cur_freq = cpufreq_quick_get(cpu);
 #else
 			this_cpu->cur_freq = acpuclk_get_rate(cpu);
 #endif
@@ -408,7 +408,7 @@ static int __init msm_rq_stats_init(void)
 		pcpu->policy_max = cpu_policy.cpuinfo.max_freq;
 		if (cpu_online(i))
 #if defined(CONFIG_ARCH_MSM8226) || defined(CONFIG_ARCH_MSM8610)
-			pcpu->cur_freq = cpufreq_quick_get(i) * 1000;
+			pcpu->cur_freq = cpufreq_quick_get(i);
 #else
 			pcpu->cur_freq = acpuclk_get_rate(i);
 #endif
