@@ -303,11 +303,13 @@ struct mms_ts_info {
 
 	char				*fw_name;
 	struct early_suspend		early_suspend;
+#ifdef CONFIG_SEC_DVFS
 #if TOUCH_BOOSTER
 	struct delayed_work work_dvfs_off;
 	struct delayed_work	work_dvfs_chg;
 	bool	dvfs_lock_status;
 	struct mutex dvfs_lock;
+#endif
 #endif
 
 	/* protects the enabled flag */
@@ -544,6 +546,7 @@ int is_melfas_vdd_on(struct mms_ts_info *info)
 	return 0;
 }
 
+#ifdef CONFIG_SEC_DVFS
 #if TOUCH_BOOSTER
 static void change_dvfs_lock(struct work_struct *work)
 {
@@ -601,6 +604,7 @@ static void set_dvfs_lock(struct mms_ts_info *info, uint32_t on)
 	mutex_unlock(&info->dvfs_lock);
 }
 #endif
+#endif
 
 static void release_all_fingers(struct mms_ts_info *info)
 {
@@ -623,9 +627,11 @@ static void release_all_fingers(struct mms_ts_info *info)
 					   false);
 	}
 	input_sync(info->input_dev);
+#ifdef CONFIG_SEC_DVFS
 #if TOUCH_BOOSTER
 	set_dvfs_lock(info, 2);
 	pr_info("[TSP] dvfs_lock free.\n ");
+#endif
 #endif
 }
 
@@ -869,8 +875,10 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 			touch_is_pressed++;
 	}
 
+#ifdef CONFIG_SEC_DVFS
 #if TOUCH_BOOSTER
 	set_dvfs_lock(info, !!touch_is_pressed);
+#endif
 #endif
 
 out:
@@ -3422,11 +3430,13 @@ int __devinit mms_ts_probe(struct i2c_client *client,
 		goto err_reg_input_dev;
 	}
 
+#ifdef CONFIG_SEC_DVFS
 #if TOUCH_BOOSTER
 	mutex_init(&info->dvfs_lock);
 	INIT_DELAYED_WORK(&info->work_dvfs_off, set_dvfs_off);
 	INIT_DELAYED_WORK(&info->work_dvfs_chg, change_dvfs_lock);
 	info->dvfs_lock_status = false;
+#endif
 #endif
 
 #if ISC_DL_MODE
