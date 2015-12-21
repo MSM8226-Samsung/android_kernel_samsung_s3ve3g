@@ -314,13 +314,13 @@ choice
 
 
 config SND_SOC_ES_I2C
-        bool "earSmart I2C"
+        tristate "earSmart I2C"
         help
           Y to use the I2C as control interface to communicate with
 	  Audience chips.
 
 config SND_SOC_ES_SLIM
-        bool "earSmart SLIMbus"
+        tristate "earSmart SLIMbus"
         help
           Y to use the SLIMbus as the command and control path
 endchoice
