@@ -152,10 +152,7 @@ static unsigned int es325_BWE_enable = ES325_MAX_INVALID_BWE;
 static unsigned int es325_BWE_enable_new = ES325_MAX_INVALID_BWE;
 static unsigned int es325_Tx_NS = ES325_MAX_INVALID_TX_NS;
 static unsigned int es325_Tx_NS_new = ES325_MAX_INVALID_TX_NS;
-#ifdef CONFIG_ARCH_MSM8226
-static struct regulator* es325_ldo;
-static int es325_2mic_core_power(int state);
-#endif
+
 /* codec private data */
 struct es325_priv {
 	struct snd_soc_codec *codec;
@@ -189,13 +186,8 @@ unsigned int FW_not_ready = 1;
 static unsigned int uart_enable = 0;
 
 static int es325_slim_rx_port_to_ch[ES325_SLIM_RX_PORTS] = {
-#ifdef CONFIG_ARCH_MSM8226
-	152, 153, 154, 155, 128, 129
-#else
 	152, 153, 154, 155, 134, 135
-#endif
 };
-
 static int es325_slim_tx_port_to_ch[ES325_SLIM_TX_PORTS] = {
 	156, 157, 144, 145, 144, 145
 };
@@ -945,13 +937,8 @@ int es325_remote_cfg_slim_tx(int dai_id)
 		es325->dai[ID(dai_id)].ch_tot = ch_cnt;
 		es325->dai[ID(be_id)].rate = es325->dai[ID(dai_id)].rate;
 		if (be_id == ES325_SLIM_3_PB) {
-#ifdef CONFIG_ARCH_MSM8226
-			es325->dai[ID(be_id)].ch_num[0] = 128;
-			es325->dai[ID(be_id)].ch_num[1] = 129;
-#else
 			es325->dai[ID(be_id)].ch_num[0] = 134;
 			es325->dai[ID(be_id)].ch_num[1] = 135;
-#endif
 		}
 		rc = es325_codec_cfg_slim_rx(es325, be_id, true);
 		dev_info(&sbdev->dev, "=[ES325]=%s: MDM<<<-[%d][%d]ES325[%d][%d]<<<-WCD channel mapping\n",
@@ -3437,10 +3424,6 @@ static int es325_codec_suspend(struct snd_soc_codec *codec)
 {
 	struct es325_priv *es325 = snd_soc_codec_get_drvdata(codec);
 	es325_set_bias_level(codec, SND_SOC_BIAS_OFF);
-#ifdef CONFIG_ARCH_MSM8226
-	es325_2mic_core_power(0);
-#endif
-
 	es325_sleep(es325);
 	return 0;
 }
@@ -3448,9 +3431,6 @@ static int es325_codec_suspend(struct snd_soc_codec *codec)
 static int es325_codec_resume(struct snd_soc_codec *codec)
 {
 	struct es325_priv *es325 = snd_soc_codec_get_drvdata(codec);
-#ifdef CONFIG_ARCH_MSM8226
-	es325_2mic_core_power(1);
-#endif
 	es325_wakeup(es325);
 	es325_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 	return 0;
@@ -3573,75 +3553,7 @@ alloc_err:
 err:
 	return NULL;
 }
-#ifdef CONFIG_ARCH_MSM8226
-static int es325_regulator_init(struct device *dev)
-{
-	int ret;
-	struct device_node *reg_node = NULL;
 
-	reg_node = of_parse_phandle(dev->of_node, "vdd-2mic-core-supply", 0);
-	if(reg_node)
-	{
-		es325_ldo = regulator_get(dev, "vdd-2mic-core");
-		if (IS_ERR(es325_ldo)) {
-				pr_err("[%s] could not get earjack_ldo, %ld\n", __func__, PTR_ERR(es325_ldo));
-		}
-		else
-		{
-			ret = regulator_enable(es325_ldo);
-			if(ret < 0) {
-				pr_err("%s: Failed to enable regulator.\n",
-					__func__);
-				goto err_reg_enable;
-			} else
-				regulator_set_mode(es325_ldo, REGULATOR_MODE_NORMAL);
-		}
-	}else
-		pr_err("%s Audience LDO node not available\n",__func__);
-
-err_reg_enable:
-	if(es325_ldo)
-		regulator_put(es325_ldo);
-
-	return ret;
-}
-
-static int es325_regulator_deinit(void)
-{
-	if(es325_ldo)
-		{
-			int ret;
-
-			ret = regulator_disable(es325_ldo);
-			if(ret < 0) {
-					pr_err("%s: Failed to disable regulator.\n",__func__);
-			}
-			regulator_put(es325_ldo);
-		}
-	return 0;
-}
-
-static int es325_2mic_core_power(int state)
-{
-	int ret;
-
-	if(state)
-	{
-		ret  = regulator_enable(es325_ldo);
-		if(ret < 0) {
-					pr_err("%s: Failed to enable regulator.\n",__func__);
-			}
-	}
-	else
-	{
-		ret  = regulator_disable(es325_ldo);
-		if(ret < 0) {
-					pr_err("%s: Failed to disable regulator.\n",__func__);
-			}
-	}
-	return 0;
-}
-#endif
 static int es325_slim_probe(struct slim_device *sbdev)
 {
 	struct esxxx_platform_data *pdata = NULL;
@@ -3650,9 +3562,7 @@ static int es325_slim_probe(struct slim_device *sbdev)
 	dev_dbg(&sbdev->dev, "+[ES325]=%s()\n", __func__);
 	dev_dbg(&sbdev->dev, "=[ES325]=%s(): sbdev->name = %s es325_priv = 0x%08x\n",
 		__func__, sbdev->name, (unsigned int)&es325_priv);
-#ifdef CONFIG_ARCH_MSM8226
-	es325_regulator_init(&sbdev->dev);
-#endif
+
 	mutex_lock(&es325_priv.wakeup_mutex);
 	if (sbdev->dev.of_node) {
 		dev_info(&sbdev->dev, "=[ES325]=%s(): Platform data from device tree\n", __func__);
@@ -3815,13 +3725,8 @@ static int register_snd_soc(struct es325_priv *priv)
 	es325_priv.dai[ES325_SLIM_2_PB].ch_num[1] = 155;
 	es325_priv.dai[ES325_SLIM_2_CAP].ch_num[0] = 144;
 	es325_priv.dai[ES325_SLIM_2_CAP].ch_num[1] = 145;
-#ifdef CONFIG_ARCH_MSM8226
-	es325_priv.dai[ES325_SLIM_3_PB].ch_num[0] = 128;
-	es325_priv.dai[ES325_SLIM_3_PB].ch_num[1] = 129;
-#else
 	es325_priv.dai[ES325_SLIM_3_PB].ch_num[0] = 134;
 	es325_priv.dai[ES325_SLIM_3_PB].ch_num[1] = 135;
-#endif
 	es325_priv.dai[ES325_SLIM_3_CAP].ch_num[0] = 144;
 	es325_priv.dai[ES325_SLIM_3_CAP].ch_num[1] = 145;
 
@@ -3835,9 +3740,7 @@ static int es325_slim_remove(struct slim_device *sbdev)
 
 	dev_dbg(&sbdev->dev, "+[ES325]=%s()\n", __func__);
 	dev_dbg(&sbdev->dev, "=[ES325]=%s(): sbdev->name = %s\n", __func__, sbdev->name);
-#ifdef CONFIG_ARCH_MSM8226
-	es325_regulator_deinit();
-#endif
+
 	gpio_free(pdata->reset_gpio);
 	gpio_free(pdata->wakeup_gpio);
 	gpio_free(pdata->gpioa_gpio);

@@ -100,7 +100,7 @@
  * of plug type with current source
  */
 #define WCD9XXX_CS_MEAS_INVALD_RANGE_LOW_MV 110
-#define WCD9XXX_CS_MEAS_INVALD_RANGE_HIGH_MV 265
+#define WCD9XXX_CS_MEAS_INVALD_RANGE_HIGH_MV 170
 
 /*
  * Threshold used to detect euro headset
@@ -120,7 +120,7 @@
 #define WCD9XXX_WG_TIME_FACTOR_US	240
 
 #define WCD9XXX_V_CS_HS_MAX 650
-#define WCD9XXX_V_CS_NO_MIC 14
+#define WCD9XXX_V_CS_NO_MIC 0
 #define WCD9XXX_MB_MEAS_DELTA_MAX_MV 80
 #define WCD9XXX_CS_MEAS_DELTA_MAX_MV 10
 

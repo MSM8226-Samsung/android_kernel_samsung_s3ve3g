@@ -170,6 +170,13 @@ static struct gpiomux_setting gpio_uart_config = {
 	.dir = GPIOMUX_OUT_HIGH,
 };
 
+static struct gpiomux_setting gpio_uart_rx_config = {
+	.func = GPIOMUX_FUNC_2,
+	.drv = GPIOMUX_DRV_16MA,
+	.pull = GPIOMUX_PULL_DOWN,
+	.dir = GPIOMUX_OUT_HIGH,
+};
+
 static struct gpiomux_setting slimbus = {
 	.func = GPIOMUX_FUNC_1,
 	.drv = GPIOMUX_DRV_8MA,
@@ -899,7 +906,7 @@ static struct msm_gpiomux_config msm_blsp_configs[] __initdata = {
 	{
 		.gpio      = 5,			/* BLSP2 UART RX */
 		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_uart_config,
+			[GPIOMUX_SUSPENDED] = &gpio_uart_rx_config,
 		},
 	},
 #if defined(CONFIG_SEC_NFC_I2C) || defined(CONFIG_NFC_PN547)
@@ -1127,12 +1134,6 @@ static struct msm_gpiomux_config msm_sensor_configs[] __initdata = {
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &cam_settings[3],
 			[GPIOMUX_SUSPENDED] = &gpio_suspend_config[2],
-		},
-	},
-	{
-		.gpio = 129, /* 8M_AVDD_LDO_EN */
-		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_suspend_config[3],
 		},
 	},
 };

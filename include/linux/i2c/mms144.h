@@ -15,11 +15,7 @@
 #ifndef _LINUX_MMS_TOUCH_H
 #define _LINUX_MMS_TOUCH_H
 
-#if defined(CONFIG_TOUCHSCREEN_MMS300)
-#define MELFAS_TS_NAME			"mms300_ts"
-#else
 #define MELFAS_TS_NAME			"mms144_ts"
-#endif
 
 struct mms_ts_platform_data {
 	int	max_x;

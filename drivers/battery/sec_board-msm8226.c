@@ -146,7 +146,7 @@ static struct sec_fuelgauge_info *sec_fuelgauge =  NULL;
 #define TEMP_LOW_THRESHOLD_LPM     (-40)
 #define TEMP_LOW_RECOVERY_LPM      0
 #elif defined(CONFIG_SEC_MATISSE_PROJECT)
-#define TEMP_HIGH_THRESHOLD_EVENT  530
+#define TEMP_HIGH_THRESHOLD_EVENT  540
 #define TEMP_HIGH_RECOVERY_EVENT   460
 #define TEMP_LOW_THRESHOLD_EVENT   (-50)
 #define TEMP_LOW_RECOVERY_EVENT    0

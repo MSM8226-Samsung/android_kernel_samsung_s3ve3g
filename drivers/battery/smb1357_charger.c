@@ -1184,6 +1184,15 @@ static int smb1357_get_charging_health(struct i2c_client *client)
 #endif
 	}
 
+	if (status_1 & 0x08){
+		if (smb1357data->ovp_gpio_en) {
+			gpio_set_value(smb1357data->ovp_gpio_en, true);
+			msleep(500);
+			gpio_set_value(smb1357data->ovp_gpio_en, false);
+		}
+		dev_dbg(&client->dev,"USBIN suspended %s\n",__func__);
+	}
+
 	gpio = gpio_get_value(smb1357data->pogo_det_gpio);
 	dev_info(&client->dev,"health: pogo gpio %d\n",gpio);
 
@@ -3123,9 +3132,15 @@ static void max77804k_tiny_init_work(struct work_struct *work)
 					tiny_init_work.work);
 	u8 reg_data;
 
+#ifdef CONFIG_SEC_FACTORY
+	reg_data = 0xFF;
+	max77804k_update_reg(max77804k_tiny_charger->max77804k->i2c,
+			MAX77804K_CHG_REG_CHG_INT_MASK, reg_data, 0xFF);
+#else
 	reg_data = 0x00;
 	max77804k_update_reg(max77804k_tiny_charger->max77804k->i2c,
 			MAX77804K_CHG_REG_CHG_INT_MASK, reg_data, 0x04);
+#endif
 
 	pr_info("%s\n",__func__);
 	return;
@@ -3154,11 +3169,13 @@ static __devinit int max77804k_tiny_charger_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK_DEFERRABLE(&max77804k_tiny_charger->tiny_init_work,
 		max77804k_tiny_init_work);
 
+#ifndef CONFIG_SEC_FACTORY
 	if (max77804k_tiny_charger->max77804k->irq_base) {
 		max77804k_tiny_irq_batp =
 		max77804k_tiny_charger->max77804k->irq_base + MAX77804K_CHG_IRQ_BATP_I;
 	}
 	else
+#endif
 		max77804k_tiny_irq_batp = 0;
 
 	schedule_delayed_work(&max77804k_tiny_charger->tiny_init_work,

@@ -358,13 +358,8 @@ static struct dsi_cmd_desc samsung_panel_elvss_update_cmds_4_8[] = {
 
 
 static struct dsi_cmd_desc samsung_panel_acl_on_cmds[] = {
-#if defined(CONFIG_MACH_S3VE3G_EUR)
-	{{DTYPE_DCS_LWRITE, 0, 0, 0, 0,
-		sizeof(acl_set_zero)}, acl_set_zero},
-#else
 	{{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
 		sizeof(acl_set_zero)}, acl_set_zero},
-#endif
 	{{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
 		sizeof(acl_on)}, acl_on}
 };
@@ -1311,9 +1306,8 @@ static void mdss_dsi_panel_acl_ctrl(struct mdss_panel_data *pdata, int enable)
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
-#if !defined(CONFIG_MACH_S3VE3G_EUR)
 	flag = CMD_REQ_SINGLE_TX;
-#endif
+
 	switch (enable) {
 
 		case PANEL_ACL_ON:
@@ -1347,8 +1341,8 @@ static void mdss_dsi_panel_acl_ctrl(struct mdss_panel_data *pdata, int enable)
 				for (i = 0; i < cmd_size; i++)
 				{
 					for (j = 0; j < cmd_desc[i].dchdr.dlen; j++)
-						pr_err("%x ",cmd_desc[i].payload[j]);
-					pr_err("\n");
+						pr_debug("%x ",cmd_desc[i].payload[j]);
+					pr_debug("\n");
 				}
 #endif
 
@@ -1531,13 +1525,11 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 #endif
 	}
 
-#if !defined(CONFIG_MACH_S3VE3G_EUR)
 	if( msd.mfd->panel_power_on == false){
 		pr_err("%s: panel power off no bl ctrl\n", __func__);
 		return;
 	}
-#endif
-
+	
 #if defined(CONFIG_ESD_ERR_FG_RECOVERY)
 	if (err_fg_working) {
 		pr_info("[LCD] %s : esd is working!! return.. \n", __func__);
@@ -1545,10 +1537,8 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	}
 #endif
 
-#if defined(CONFIG_MACH_S3VE3G_EUR)
-	if(bl_level)
-	msd.mfd->bl_previous = bl_level;	
-#endif
+
+
 	switch (ctrl_pdata->bklt_ctrl) {
 
 	case BL_DCS_CMD:
@@ -1591,7 +1581,7 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 end:
 	return;
 }
-int bl_first_update=0;
+
 static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
@@ -1648,12 +1638,6 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 
 	if (ctrl->on_cmds.cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->on_cmds);
-#if defined(CONFIG_MACH_S3VE3G_EUR)	
-	if(bl_first_update== 0)
-		pr_err("to maintain ddefault brightness \n");
-	else
-		mdss_dsi_panel_bl_ctrl(pdata,msd.mfd->bl_previous);
-#endif
 
 	panel_state = MIPI_RESUME_STATE;
 #if defined(CONFIG_LCD_CLASS_DEVICE)

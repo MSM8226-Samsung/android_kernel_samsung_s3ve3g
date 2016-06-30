@@ -1379,6 +1379,14 @@ static int max77804k_muic_handle_attach(struct max77804k_muic_info *info,
 		break;
 	case ADC_CEA936ATYPE1_CHG:
 	case ADC_CEA936ATYPE2_CHG:
+#if defined(CONFIG_SEC_FACTORY)
+		new_state = BIT(EXTCON_JIG_UARTOFF);
+		if (vbvolt) {
+			if (gInfo->otg_test) /*add for DFMS */
+				new_state |= BIT(EXTCON_USB_HOST_5V);
+		}
+		break;
+#endif
 	case ADC_OPEN:
 		switch (chgtyp) {
 		case CHGTYP_USB:

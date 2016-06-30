@@ -121,7 +121,6 @@ enum {
 	SYNC_MSG_NACK
 };
 
-
 struct es325_slim_dai_data {
 	unsigned int rate;
 	unsigned int *ch_num;
@@ -198,8 +197,9 @@ static unsigned int es325_ap_tx1_ch_cnt = 1;
 unsigned int es325_tx1_route_enable;
 unsigned int es325_rx1_route_enable;
 unsigned int es325_rx2_route_enable;
-unsigned int FW_not_ready = 1;
+unsigned int es325_fw_downloaded = 0;
 static unsigned int uart_enable = 0;
+
 #if defined(CONFIG_WCD9306_CODEC)
 
 #define SMB_RX_PORT0 152
@@ -441,7 +441,6 @@ static u8 es325_internal_route_conversation[10] = {
 	0x90, 0x31, 0x00, 0x42, /* 1 Mic 2 FEOUT MD */
 	0xff		/* terminate */
 };
-
 
 static u8* es325_internal_route_configs[ES325_INTERNAL_ROUTE_MAX] = {
 	es325_internal_route_1mic_headset,		/* [0]: 1-mic Headset NB (SW bypss) */
@@ -940,7 +939,7 @@ int es325_remote_cfg_slim_rx(int dai_id)
 
 	dev_dbg(&sbdev->dev, "%s()\n", __func__);
 
-	if(FW_not_ready) {
+	if(es325_fw_downloaded == 0) {
 		dev_info(&sbdev->dev, "%s():eS325 FW not ready, cfg_slim_rx rejected\n", __func__);
 		return rc;
 	}
@@ -1003,7 +1002,7 @@ int es325_remote_cfg_slim_tx(int dai_id)
 
 	dev_dbg(&sbdev->dev, "%s()\n", __func__);
 
-	if (FW_not_ready) {
+	if(es325_fw_downloaded == 0) {
 		dev_info(&sbdev->dev, "%s():eS325 FW not ready, cfg_slim_tx rejected\n", __func__);
 		return rc;
 	}
@@ -1792,7 +1791,7 @@ static ssize_t es325_fw_version_show(struct device *dev, struct device_attribute
 		return sprintf(buf, "Can not get route_status when power_state is %d\n", es325->power_stage);
 	}
 
-	if (FW_not_ready) {
+	if(es325_fw_downloaded) {
 		memset(verbuf,0,SIZE_OF_VERBUF);
 		memcpy(cmd, first_char_msg, 4);
 		ES325_BUS_WRITE(es325, ES325_WRITE_VE_OFFSET, ES325_WRITE_VE_WIDTH, cmd, 4, 1);
@@ -2032,7 +2031,7 @@ static int es325_bootup(struct es325_priv *es325)
 	} else {
 		dev_info(&sbdev->dev, "%s():firmware load success sync ack good=0x%02x%02x%02x%02x\n",
 			__func__, resp[0], resp[1], resp[2], resp[3]);
-		FW_not_ready = 0;
+		es325_fw_downloaded = 1;
 	}
 	dev_info(&sbdev->dev, "%s()\n", __func__);
 	slim_reservemsg_bw(sbdev, 0, true);
@@ -2407,7 +2406,7 @@ static int es325_put_control_value(struct snd_kcontrol *kcontrol,
 	int rc = 0;
 
 	value = ucontrol->value.integer.value[0];
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -2423,7 +2422,7 @@ static int es325_get_control_value(struct snd_kcontrol *kcontrol,
 	unsigned int reg = mc->reg;
 	unsigned int value;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		ucontrol->value.integer.value[0] = 0;
 		return 0;
@@ -2448,7 +2447,7 @@ static int es325_put_control_enum(struct snd_kcontrol *kcontrol,
 
 	dev_dbg(&sbdev->dev, "%s():reg = %d, max = %d\n", __func__, reg, max);
 	value = ucontrol->value.enumerated.item[0];
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -2468,7 +2467,7 @@ static int es325_get_control_enum(struct snd_kcontrol *kcontrol,
 	unsigned int max = e->max;
 	unsigned int value;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		ucontrol->value.enumerated.item[0] = 0;
 		return 0;
@@ -2575,7 +2574,7 @@ static int es325_put_BWE_enable_control(struct snd_kcontrol *kcontrol,
 	struct slim_device *sbdev = es325->gen0_client;
 	dev_info(&sbdev->dev, "%s():value=%d\n", __func__, es325_BWE_enable_new);
 	es325_BWE_enable_new = ucontrol->value.integer.value[0];
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -2629,7 +2628,7 @@ static int es325_put_Tx_NS_control(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	es325_Tx_NS_new = ucontrol->value.integer.value[0];
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -2723,7 +2722,7 @@ static int es325_put_internal_route_config(struct snd_kcontrol *kcontrol,
 
 	dev_info(&sbdev->dev, "%s():route = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	es325->new_internal_route_config = ucontrol->value.integer.value[0];
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -2765,7 +2764,7 @@ static int es325_put_network_type(struct snd_kcontrol *kcontrol,
 	else
 		es325_network_type = NARROW_BAND;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -2916,7 +2915,7 @@ static int es325_put_dereverb_gain_value(struct snd_kcontrol *kcontrol,
 	unsigned int value;
 	int rc;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -2940,7 +2939,7 @@ static int es325_get_dereverb_gain_value(struct snd_kcontrol *kcontrol,
 	unsigned int reg = mc->reg;
 	unsigned int value;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		ucontrol->value.integer.value[0] = 0;
 		return 0;
@@ -2964,7 +2963,7 @@ static int es325_put_bwe_high_band_gain_value(struct snd_kcontrol *kcontrol,
 	unsigned int value;
 	int rc;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -2988,7 +2987,7 @@ static int es325_get_bwe_high_band_gain_value(struct snd_kcontrol *kcontrol,
 	unsigned int reg = mc->reg;
 	unsigned int value;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		ucontrol->value.integer.value[0] = 0;
 		return 0;
@@ -3012,7 +3011,7 @@ static int es325_put_bwe_max_snr_value(struct snd_kcontrol *kcontrol,
 	unsigned int value;
 	int rc;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);			
 		return 0;
 	}	
@@ -3036,7 +3035,7 @@ static int es325_get_bwe_max_snr_value(struct snd_kcontrol *kcontrol,
 	unsigned int reg = mc->reg;
 	unsigned int value;
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		ucontrol->value.integer.value[0] = 0;
 		return 0;
@@ -3113,7 +3112,7 @@ static int es325_put_power_state_enum(struct snd_kcontrol *kcontrol, struct snd_
 	}
 	es325_power_state = ucontrol->value.enumerated.item[0];
 
-	if(FW_not_ready || es325_priv.wakeup_cnt == 0) {
+	if((es325_fw_downloaded == 0) || (es325_priv.wakeup_cnt == 0)) {
 		pr_info("%s():es325 not ready, return\n", __func__);
 		return 0;
 	}
@@ -3699,15 +3698,16 @@ err_reg_enable:
 static int es325_regulator_deinit(void)
 {
 	if(es325_ldo)
-		{
-			int ret;
+	{
+		int ret;
 
-			ret = regulator_disable(es325_ldo);
-			if(ret < 0) {
-					pr_err("%s():Failed to disable regulator.\n",__func__);
-			}
-			regulator_put(es325_ldo);
+		ret = regulator_disable(es325_ldo);
+		if(ret < 0) {
+			pr_err("%s():Failed to disable regulator.\n",__func__);
 		}
+		regulator_put(es325_ldo);
+	}
+
 	return 0;
 }
 #endif
@@ -3766,8 +3766,8 @@ static int es325_slim_probe(struct slim_device *sbdev)
 		goto pdata_error;
 	}
 
-	if(strcmp(sbdev->name, "es325-gen0") == 0) {
-		/* /sys/devices/platform/msm_slim_ctrl.1/es325-codec-gen0/xxx */
+	if(strcmp(sbdev->name, "es325-gen") == 0) {
+		/* /sys/devices/fe12f000.slim/es325-gen/ */
 		for (cnt = 0; cnt < ARRAY_SIZE(es325_device_attrs); cnt++) {
 			rc = device_create_file(&sbdev->dev, &es325_device_attrs[cnt]);
 			if (rc){
@@ -3940,8 +3940,8 @@ void es325_wrapper_wakeup(struct snd_soc_dai *dai)
 	struct es325_priv *es325 = &es325_priv;
 	struct slim_device *sbdev = es325->gen0_client;
 	dev_info(&sbdev->dev, "%s()\n", __func__);
-	if(FW_not_ready) {
-        dev_info(&sbdev->dev, "%s():FW not ready, wakeup suspends, err_msg:%d\n", __func__,debug_for_dl_firmware);
+	if(es325_fw_downloaded==0) {
+		dev_info(&sbdev->dev, "%s():FW not ready, wakeup suspends, err_msg:%d\n", __func__,debug_for_dl_firmware);
 		return;
 	}
 	dev_dbg(&sbdev->dev, "%s():dai_id=%d ch_wakeup=%d,wakeup_cnt=%d\n",

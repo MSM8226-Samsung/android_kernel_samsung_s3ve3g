@@ -61,6 +61,28 @@ void sr130pc20_regs_table_init(char *filename);
 void sr130pc20_regs_table_exit(void);
 #endif
 
+int32_t sr130pc20_sensor_match_id(struct msm_camera_i2c_client *sensor_i2c_client,
+    struct msm_camera_slave_info *slave_info, const char *sensor_name)
+{
+    int32_t rc = 0;
+    uint16_t chipid = 0;
+    if (!sensor_i2c_client || !slave_info || !sensor_name) {
+        pr_err("%s:%d failed: %p %p %p\n",__func__, __LINE__,
+            sensor_i2c_client, slave_info,sensor_name);
+        return -EINVAL;
+    }
+    CDBG("%s sensor_name =%s sid = 0x%X sensorid = 0x%X DATA TYPE = %d\n",
+        __func__, sensor_name, sensor_i2c_client->cci_client->sid,
+        slave_info->sensor_id, sensor_i2c_client->data_type);
+    rc = sensor_i2c_client->i2c_func_tbl->i2c_read(sensor_i2c_client,
+        slave_info->sensor_id_reg_addr, &chipid, sensor_i2c_client->data_type);
+    if (chipid != slave_info->sensor_id) {
+        pr_err("%s: chip id %x does not match read id: %x\n",
+            __func__, chipid, slave_info->sensor_id);
+    }
+    return rc;
+}
+
 int32_t sr130pc20_set_exposure_compensation(struct msm_sensor_ctrl_t *s_ctrl, int mode)
 {
 	int32_t rc = 0;

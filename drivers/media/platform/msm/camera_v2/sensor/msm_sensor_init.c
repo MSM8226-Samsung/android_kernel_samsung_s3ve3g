@@ -150,7 +150,7 @@ ssize_t back_camera_antibanding_store (struct device *dev, struct device_attribu
 	return size;
 }
 
-char cam_fw_ver[25] = "NULL NULL\n";
+char cam_fw_ver[25] = "E08QLGI01CH E08QLGI01CH\n";/*VE,8mega_pixel,Qualcomm_isp,SLSI_sensor*/
 static ssize_t back_camera_firmware_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
 {
@@ -159,7 +159,8 @@ static ssize_t back_camera_firmware_show(struct device *dev,
 	char cam_fw[] = "O13Q0SAGC01 O13Q0SAGC01\n";/*Camsys_module,13mega_pixel,Qualcomm_isp,Sony_sensor*/
 	return snprintf(buf, sizeof(cam_fw), "%s", cam_fw);
 #elif defined(CONFIG_MACH_S3VE3G_EUR)
-	return snprintf(buf, sizeof(cam_fw_ver), "%s %s", cam_fw_ver, cam_fw_ver);
+	char cam_fw[] = "B08QTGJ01MI B08QTGJ01MI\n";
+	return snprintf(buf, sizeof(cam_fw), "%s", cam_fw);
 #elif defined(CONFIG_MACH_VIENNAEUR)
 	char cam_fw[] = "E08QSGG01OC E08QSGG01OC\n";/* Gumi, 8mega_pixel, Qualcomm_isp, Sony_sensor*/
 	return snprintf(buf, sizeof(cam_fw), "%s", cam_fw);

@@ -806,11 +806,9 @@ struct oem_dha_parm_send_t {
 
 struct oem_dha_parm_send_cmd {
 	struct apr_hdr hdr;
-#ifndef CONFIG_MACH_S3VE3G_EUR
 	uint32_t mem_handle;
 	uint64_t mem_address;
 	uint32_t mem_size;
-#endif
 	struct oem_dha_parm_send_t dha_send;
 } __packed;
 #endif /* CONFIG_SEC_DHA_SOL_MAL*/

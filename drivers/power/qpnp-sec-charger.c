@@ -1642,8 +1642,6 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 
 	#if defined(CONFIG_SEC_KANAS_PROJECT)
 	mdelay(10);
-	#elif defined(CONFIG_MACH_S3VE3G_EUR)
-	mdelay(30);
 	#endif
 
 	usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
@@ -2001,8 +1999,7 @@ static void sec_bat_ext_ovp_confirm(struct work_struct *work)
 				chip->cable_type == CABLE_TYPE_CDP ||
 				chip->cable_type == CABLE_TYPE_MISC ||
 				chip->cable_type == CABLE_TYPE_UARTOFF ||
-				chip->cable_type == CABLE_TYPE_AUDIO_DOCK ||
-				chip->cable_type == CABLE_TYPE_INCOMPATIBLE) {
+				chip->cable_type == CABLE_TYPE_AUDIO_DOCK) {
 		gpio_set_value(chip->ovp_gpio, 1);
 		pr_err("Ext OVP is set again\n");
 
@@ -2080,8 +2077,7 @@ qpnp_chg_chgr_chg_fastchg_irq_handler(int irq, void *_chip)
 					chip->cable_type == CABLE_TYPE_CDP ||
 					chip->cable_type == CABLE_TYPE_MISC ||
 					chip->cable_type == CABLE_TYPE_UARTOFF ||
-					chip->cable_type == CABLE_TYPE_AUDIO_DOCK ||
-					chip->cable_type == CABLE_TYPE_INCOMPATIBLE) {
+					chip->cable_type == CABLE_TYPE_AUDIO_DOCK) {
 			gpio_set_value(chip->ovp_gpio, 1);
 
 			pr_err("Enable sec_bat_ext_ovp_work\n");
@@ -5945,6 +5941,17 @@ static void sec_handle_cable_insertion_removal(struct qpnp_chg_chip *chip)
 		qpnp_chg_iusbmax_set(chip, 0);
 		chip->usb_psy->set_property(chip->usb_psy, POWER_SUPPLY_PROP_ONLINE, &value);
 		break;
+	case CABLE_TYPE_INCOMPATIBLE:
+		value.intval = 0;
+		chip->usb_psy->set_property(chip->usb_psy, POWER_SUPPLY_PROP_ONLINE, &value);
+		pr_err("INCOMPATIBLE charger inserted, batt_present(%d)\n",
+		chip->batt_present);
+
+		qpnp_chg_iusbmax_set(chip, chg_imax_ma);
+		qpnp_chg_ibatmax_set(chip,chg_imax_ma);
+		sec_pm8226_stop_charging(chip);
+		chip->batt_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		break;
 	case CABLE_TYPE_USB:
 		pr_err("USB is inserted, chg_current 500, batt_present(%d)\n",
 				chip->batt_present);
@@ -5970,8 +5977,7 @@ static void sec_handle_cable_insertion_removal(struct qpnp_chg_chip *chip)
 			}
 		}
 		break;
-	case CABLE_TYPE_INCOMPATIBLE:
-			pr_err("INCOMPATIBLE ");
+
 	case CABLE_TYPE_AC:
 			pr_err("TA is inserted, batt_present(%d)\n"
 					,chip->batt_present);
@@ -6147,7 +6153,6 @@ static void sec_pm8226_start_charging(struct qpnp_chg_chip *chip)
         case CABLE_TYPE_MISC:
         case CABLE_TYPE_UARTOFF:
         case CABLE_TYPE_AUDIO_DOCK:
-		case CABLE_TYPE_INCOMPATIBLE:
 		/* Set charge current based on cable type */
 		//usb_target_ma = 500; temporraliy done in cable_insertion func
 		/* set CHG_EN bit to enable charging*/
@@ -6223,7 +6228,7 @@ static void sec_bat_monitor(struct work_struct *work)
 #ifdef SEC_BTM_TEST
 	static u8 btm_count;
 #endif
-	#if defined(CONFIG_MACH_CS03_SGLTE) || defined(CONFIG_MACH_Q7_CHN_SGLTE) || defined(CONFIG_MACH_VICTOR_CHN_SGLTE) || defined(CONFIG_MACH_S3VE3G_EUR)
+	#if defined(CONFIG_MACH_CS03_SGLTE) || defined(CONFIG_MACH_Q7_CHN_SGLTE) || defined(CONFIG_MACH_VICTOR_CHN_SGLTE)
 	int rc;
 	u8 buck_sts = 0;
 	#endif
@@ -6255,8 +6260,7 @@ static void sec_bat_monitor(struct work_struct *work)
 		chip->cable_type == CABLE_TYPE_CDP ||
 		chip->cable_type == CABLE_TYPE_MISC ||
 		chip->cable_type == CABLE_TYPE_UARTOFF ||
-		chip->cable_type == CABLE_TYPE_AUDIO_DOCK ||
-		chip->cable_type == CABLE_TYPE_INCOMPATIBLE) &&
+		chip->cable_type == CABLE_TYPE_AUDIO_DOCK) &&
 		chip->charging_disabled &&
 		!chip->is_recharging &&
 		(chip->batt_health == POWER_SUPPLY_HEALTH_GOOD) &&
@@ -6329,7 +6333,7 @@ static void sec_bat_monitor(struct work_struct *work)
 
 	if (chip->batt_status == POWER_SUPPLY_STATUS_CHARGING || chip->is_recharging) {
 		if ( qpnp_chg_is_usb_chg_plugged_in(chip) && !chip->charging_disabled ) {
-			#if defined(CONFIG_MACH_CS03_SGLTE) || defined(CONFIG_MACH_Q7_CHN_SGLTE) || defined(CONFIG_MACH_VICTOR_CHN_SGLTE) || defined(CONFIG_MACH_S3VE3G_EUR)
+			#if defined(CONFIG_MACH_CS03_SGLTE) || defined(CONFIG_MACH_Q7_CHN_SGLTE) || defined(CONFIG_MACH_VICTOR_CHN_SGLTE)
 			rc = qpnp_chg_read(chip, &buck_sts, INT_RT_STS(chip->buck_base), 1);
 			if (!rc) {
 				if (buck_sts & VDD_LOOP_IRQ) {
@@ -6516,8 +6520,7 @@ static int sec_ac_get_property(struct power_supply *psy,
 	else if (chip->cable_type == CABLE_TYPE_AC ||
 			chip->cable_type == CABLE_TYPE_MISC ||
 			chip->cable_type == CABLE_TYPE_UARTOFF ||
-			chip->cable_type == CABLE_TYPE_AUDIO_DOCK ||
-			chip->cable_type == CABLE_TYPE_INCOMPATIBLE) {
+			chip->cable_type == CABLE_TYPE_AUDIO_DOCK) {
 		val->intval = 1;
 	} else {
 		val->intval = 0;
@@ -6616,7 +6619,7 @@ static void sec_bat_polling_alarm_expired(struct alarm *alarm)
 }
 
 #endif
-//#if defined(CONFIG_MACH_MS01_LTE)
+#if defined(CONFIG_MACH_MS01_LTE)
 static struct qpnp_chg_chip    * chg_chip;
 void change_boost_control(int on)
 {
@@ -6636,8 +6639,7 @@ void change_boost_control(int on)
 	}
 
 }
-//#endif
-
+#endif
 static int __devinit
 qpnp_charger_probe(struct spmi_device *spmi)
 {

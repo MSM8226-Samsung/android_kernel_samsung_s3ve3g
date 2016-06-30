@@ -1,9 +1,9 @@
 /* Melfas MMS-100 seies firmware list */
 
-#if defined(CONFIG_TOUCHSCREEN_MMS144) || defined(CONFIG_TOUCHSCREEN_MMS300)
+#if defined(CONFIG_TOUCHSCREEN_MMS144)
 
 /* 4.8" OCTA LCD */
-#define FW_VERSION 0xC7
+#define FW_VERSION 0xC4
 #include "d2_fw.h"
 /* 4.65" OCTA LCD */
 #define FW_465_VERSION 0xA8
