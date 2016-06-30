@@ -291,35 +291,6 @@ static int sm5502_read_reg(struct i2c_client *client, int reg)
         return ret;
 }
 
-
-static void sm5502_disable_interrupt(void)
-{
-	struct i2c_client *client = local_usbsw->client;
-	int value, ret;
-
-	value = i2c_smbus_read_byte_data(client, REG_CONTROL);
-	value |= CON_INT_MASK;
-
-	ret = i2c_smbus_write_byte_data(client, REG_CONTROL, value);
-	if (ret < 0)
-		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
-
-}
-
-static void sm5502_enable_interrupt(void)
-{
-	struct i2c_client *client = local_usbsw->client;
-	int value, ret;
-
-	value = i2c_smbus_read_byte_data(client, REG_CONTROL);
-	value &= (~CON_INT_MASK);
-
-	ret = i2c_smbus_write_byte_data(client, REG_CONTROL, value);
-	if (ret < 0)
-		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
-
-}
-
 static void sm5502_dock_control(struct sm5502_usbsw *usbsw,
 	int dock_type, int state, int path)
 {
@@ -904,8 +875,21 @@ static int sm5502_attach_dev(struct sm5502_usbsw *usbsw)
 	/* USB */
 	if (val1 & DEV_USB || val2 & DEV_T2_USB_MASK ||
 			val4 & DEV_CARKIT_CHARGER1_MASK) {
+#if defined(CONFIG_MACH_S3VE3G_EUR)
+		vbus = i2c_smbus_read_byte_data(client, REG_VBUSINVALID);
+		dev_err(&client->dev, "%s: vbus val%d\n", __func__, vbus);
+		if(vbus != 0x00){
+				pr_info("[MUIC] USB Connected\n");
+				pdata->callback(CABLE_TYPE_USB, SM5502_ATTACHED);
+		}
+		else{
+			pr_info("[MUIC] USB Disconnected\n");
+			pdata->callback(CABLE_TYPE_USB, SM5502_DETACHED);
+		}
+#else
 		pr_info("[MUIC] USB Connected\n");
 		pdata->callback(CABLE_TYPE_USB, SM5502_ATTACHED);
+#endif
 	/* USB_CDP */
 	} else if (val1 & DEV_USB_CHG) {
 		pr_info("[MUIC] CDP Connected\n");
@@ -961,12 +945,10 @@ static int sm5502_attach_dev(struct sm5502_usbsw *usbsw)
 	/* MHL */
 	} else if (val3 & DEV_MHL) {
 		pr_info("[MUIC] MHL Connected\n");
-		sm5502_disable_interrupt();
 		if (!poweroff_charging)
 			/*mhl_ret = mhl_onoff_ex(1); support from sii8240*/
 		else
 			pr_info("LPM mode, skip MHL sequence\n");
-		sm5502_enable_interrupt();
 #endif
 	/* Car Dock */
 	} else if (val2 & DEV_JIG_UART_ON) {
@@ -1193,10 +1175,8 @@ static irqreturn_t sm5502_irq_thread(int irq, void *data)
 	pr_info("sm5502_irq_thread is called\n");
 
 	mutex_lock(&usbsw->mutex);
-	sm5502_disable_interrupt();
 	intr1 = i2c_smbus_read_byte_data(client, REG_INT1);
 	intr2 = i2c_smbus_read_byte_data(client, REG_INT2);
-	sm5502_enable_interrupt();
 
 	adc = i2c_smbus_read_byte_data(client, REG_ADC);
 	dev_info(&client->dev, "%s: intr1 : 0x%x,intr2 : 0x%x, adc : 0x%x\n",
@@ -1240,9 +1220,11 @@ static irqreturn_t sm5502_irq_thread(int irq, void *data)
 #endif
 		if(sec_get_notification(HNOTIFY_MODE) != NOTIFY_TEST_MODE){
 
-			if(adc == ADC_JIG_UART_OFF)	/*JIG UART OFF VBUS Change*/
+			/*JIG UART OFF VBUS Change or Sosche Charger*/
+			if((adc == ADC_JIG_UART_OFF) || (adc == ADC_OPEN))
 				sm5502_attach_dev(usbsw);
-			else if(adc == ADC_DESKDOCK)	/*DESKDOCK VBUS Change*/
+			/*Deskdock VBUS Change scenario*/
+			else if(adc == ADC_DESKDOCK)
 				usbsw->pdata->callback(CABLE_TYPE_AC,SM5502_ATTACHED);
 		}
 	}
@@ -1253,9 +1235,11 @@ static irqreturn_t sm5502_irq_thread(int irq, void *data)
 #endif
 		if(sec_get_notification(HNOTIFY_MODE) != NOTIFY_TEST_MODE){
 
-			if(adc == ADC_JIG_UART_OFF)	/*JIG UART OFF VBUS Change*/
+			/*JIG UART OFF VBUS Change or Sosche Charger*/
+			if((adc == ADC_JIG_UART_OFF) || (adc == ADC_OPEN))
 				sm5502_detach_dev(usbsw);
-			else if(adc == ADC_DESKDOCK)	/*DESKDOCK VBUS Change*/
+			/*Deskdock VBUS Change scenario*/
+			else if(adc == ADC_DESKDOCK)
 				usbsw->pdata->callback(CABLE_TYPE_AC,SM5502_DETACHED);
 		}
 	}

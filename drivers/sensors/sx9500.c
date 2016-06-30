@@ -101,7 +101,7 @@ struct sx9500_p {
 	int irq;
 	int gpioNirq;
 	int state[TOTAL_BOTTON_COUNT];
-#if  defined(CONFIG_SEC_MILLET_PROJECT)  ||  defined(CONFIG_SEC_MATISSE_PROJECT) || defined(CONFIG_SEC_BERLUTI_PROJECT) || defined(CONFIG_SEC_DEGAS_PROJECT)
+#if  defined(CONFIG_SEC_MILLET_PROJECT)  ||  defined(CONFIG_SEC_MATISSE_PROJECT) || defined(CONFIG_SEC_BERLUTI_PROJECT)
 	struct regulator *L19;
 	struct regulator *lvs1_1p8;
 #endif
@@ -1102,11 +1102,11 @@ static int sx9500_parse_dt(struct sx9500_p *data, struct device *dev)
 	return 0;
 }
 
-#if defined(CONFIG_SEC_MILLET_PROJECT)  || defined(CONFIG_SEC_MATISSE_PROJECT) || defined(CONFIG_SEC_BERLUTI_PROJECT) || defined(CONFIG_SEC_DEGAS_PROJECT)
+#if defined(CONFIG_SEC_MILLET_PROJECT)  || defined(CONFIG_SEC_MATISSE_PROJECT) || defined(CONFIG_SEC_BERLUTI_PROJECT)
 int sx9500_power_on(struct sx9500_p *data, bool onoff)
 {
 	int ret = -1;
-#if defined(CONFIG_SEC_MILLET_PROJECT) || defined(CONFIG_SEC_BERLUTI_PROJECT) || defined(CONFIG_SEC_DEGAS_PROJECT)
+#if defined(CONFIG_SEC_MILLET_PROJECT) || defined(CONFIG_SEC_BERLUTI_PROJECT)
 	if (!data->L19) {
 		data->L19= regulator_get(&data->client->dev, "8226_l19");
 		if (!data->L19) {
@@ -1220,7 +1220,7 @@ static int sx9500_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, data);
 	data->client = client;
-#if defined(CONFIG_SEC_MILLET_PROJECT)  ||  defined(CONFIG_SEC_MATISSE_PROJECT) || defined(CONFIG_SEC_BERLUTI_PROJECT) || defined(CONFIG_SEC_DEGAS_PROJECT)
+#if defined(CONFIG_SEC_MILLET_PROJECT)  ||  defined(CONFIG_SEC_MATISSE_PROJECT) || defined(CONFIG_SEC_BERLUTI_PROJECT)
 	sx9500_power_on(data, 1);
 #endif
 	/* read chip id */

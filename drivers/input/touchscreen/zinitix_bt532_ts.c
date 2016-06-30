@@ -279,10 +279,6 @@ struct reg_ioctl {
 #define zinitix_swap_v(a, b, t)		((t) = (a), (a) = (b), (b) = (t))
 #define zinitix_swap_16(s)		(((((s) & 0xff) << 8) | (((s) >> 8) & 0xff)))
 
-#ifdef CONFIG_SAMSUNG_LPM_MODE
-extern int poweroff_charging;
-#endif
-
 /* end header file */
 
 #ifdef SEC_FACTORY_TEST
@@ -520,7 +516,6 @@ struct bt532_ts_info {
 	struct tsp_raw_data		*raw_data;
 #endif
 	struct regulator *vddo_vreg;
-	bool device_enabled;
 };
 /* Dummy touchkey code */
 #define KEY_DUMMY_HOME1		249
@@ -2101,9 +2096,6 @@ static int bt532_ts_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt532_ts_info *info = i2c_get_clientdata(client);
 
-	if(info->device_enabled)
-		return 0;
-	info->device_enabled = 1;
 #if defined(TSP_VERBOSE_DEBUG)
 	dev_info(&client->dev, "resume++\n");
 #endif
@@ -2136,9 +2128,6 @@ static int bt532_ts_suspend(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt532_ts_info *info = i2c_get_clientdata(client);
 
-	if(!info->device_enabled)
-		return 0;
-	info->device_enabled = 0;
 #if defined(TSP_VERBOSE_DEBUG)
 	dev_info(&client->dev, "suspend++\n");
 #endif
@@ -2180,22 +2169,6 @@ static int bt532_ts_suspend(struct device *dev)
 }
 #endif
 
-static int bt532_input_open(struct input_dev *dev)
-{
-	struct bt532_ts_info *info;
-
-	pr_info("[TSP] %s\n", __func__);
-	info = input_get_drvdata(dev);
-	return bt532_ts_resume(&info->client->dev);
-}
-static void bt532_input_close(struct input_dev *dev)
-{
-	struct bt532_ts_info *info;
-
-	pr_info("[TSP] %s\n", __func__);
-	info = input_get_drvdata(dev);
-	bt532_ts_suspend(&info->client->dev);
-}
 static bool ts_set_touchmode(u16 value)
 {
 	int i;
@@ -4032,7 +4005,6 @@ static int bt532_ts_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, info);
 	info->client = client;
 	info->pdata = pdata;
-	info->device_enabled = 1;
 
 	input_dev = input_allocate_device();
 	if (!input_dev) {
@@ -4130,8 +4102,6 @@ static int bt532_ts_probe(struct i2c_client *client,
 		0, 1, 0, 0);
 #endif
 
-	info->input_dev->open = bt532_input_open;
-	info->input_dev->close = bt532_input_close;
 	set_bit(MT_TOOL_FINGER, info->input_dev->keybit);
 	input_mt_init_slots(info->input_dev, info->cap_info.multi_fingers);
 
@@ -4194,7 +4164,7 @@ static int bt532_ts_probe(struct i2c_client *client,
 	dev_info(&client->dev, "zinitix touch probe.\r\n");
 
 #if defined(CONFIG_PM_RUNTIME)
-	//pm_runtime_enable(&client->dev);
+	pm_runtime_enable(&client->dev);
 #endif
 
 	sema_init(&info->raw_data_lock, 1);
@@ -4317,8 +4287,11 @@ static struct i2c_device_id bt532_idtable[] = {
 
 #if defined(CONFIG_PM)
 static const struct dev_pm_ops bt532_ts_pm_ops = {
-	.suspend = bt532_ts_suspend,
-	.resume = bt532_ts_resume,
+#if defined(CONFIG_PM_RUNTIME)
+	SET_RUNTIME_PM_OPS(bt532_ts_suspend, bt532_ts_resume, NULL)
+#else
+	SET_SYSTEM_SLEEP_PM_OPS(bt532_ts_suspend, bt532_ts_resume)
+#endif
 };
 #endif
 
@@ -4337,20 +4310,27 @@ static struct i2c_driver bt532_ts_driver = {
 	},
 };
 
+#if defined(CONFIG_SPA) || defined(CONFIG_SPA_LPM_MODE)
+extern int spa_lpm_charging_mode_get();
+#else
+extern unsigned int lpcharge;
+#endif
+
 static int __init bt532_ts_init(void)
 {
 	pr_debug("[TSP]: %s\n", __func__);
 	zinitix_printk("[TSP]: %s\n", __func__);
-
-#ifdef CONFIG_SAMSUNG_LPM_MODE
-	if (poweroff_charging) {
-		pr_notice("%s : LPM Charging Mode!!\n", __func__);
-		return 0;
-	}
+/*
+#if defined(CONFIG_SPA) || defined(CONFIG_SPA_LPM_MODE)
+	if (!spa_lpm_charging_mode_get())
+#else
+	if (!lpcharge)
 #endif
-
-	return i2c_add_driver(&bt532_ts_driver);
-
+*/
+		return i2c_add_driver(&bt532_ts_driver);
+/*	else
+		return 0;
+*/
 }
 
 static void __exit bt532_ts_exit(void)

@@ -1,4 +1,4 @@
-# MSM7x01A
+DTS_FILES = $(wildcard $(TOP)/kernel/arch/arm/boot/dts/msm8974/$(DTS_NAME)-sec-lt03*.dts)# MSM7x01A
    zreladdr-$(CONFIG_ARCH_MSM7X01A)	:= 0x10008000
 params_phys-$(CONFIG_ARCH_MSM7X01A)	:= 0x10000100
 initrd_phys-$(CONFIG_ARCH_MSM7X01A)	:= 0x10800000
@@ -270,7 +270,6 @@ else ifeq ($(CONFIG_MACH_MILLETLTE_VZW),y)
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8926-sec-milletltevzw-r00.dtb
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8926-sec-milletltevzw-r01.dtb
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8926-sec-milletltevzw-r02.dtb
-	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8926-sec-milletltevzw-r03.dtb
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8926-sec-milletltevzw-r04.dtb
 else ifeq ($(CONFIG_SEC_MILLETWIFI_COMMON),y)
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8226-sec-milletwifieur-r00.dtb
@@ -312,11 +311,9 @@ else ifeq ($(CONFIG_SEC_AFYONLTE_COMMON),y)
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8926-sec-afyonlte-r01.dtb
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8926-sec-afyonlte-r02.dtb
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8926-sec-afyonlte-r03.dtb
-else ifeq ($(CONFIG_MACH_ATLANTICLTE_ATT),y)
-	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8928-sec-atlanticlteatt-r00.dtb
-	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8928-sec-atlanticlteatt-r01.dtb
-else ifeq ($(CONFIG_MACH_ATLANTICLTE_VZW),y)
-         dtb-$(CONFIG_ARCH_MSM8226)     += msm8928-sec-atlanticltevzw-r00.dtb
+else ifeq ($(CONFIG_SEC_ATLANTICLTE_COMMON),y)
+	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8928-sec-atlanticlte-r00.dtb
+	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8928-sec-atlanticlte-r01.dtb
 else ifeq ($(CONFIG_SEC_ATLANTIC3G_COMMON),y)
 	 dtb-$(CONFIG_ARCH_MSM8226)	+= msm8228-sec-atlantic3g-r00.dtb
 else ifeq ($(CONFIG_MACH_BERLUTI3G_EUR),y)
@@ -385,7 +382,6 @@ ifeq ($(CONFIG_MACH_KANAS3G_CMCC),y)
 	dtb-$(CONFIG_MACH_KANAS3G_CMCC)	+= msm8610-sec-kanas3g-chn-cmcc-r01.dtb
 	dtb-$(CONFIG_MACH_KANAS3G_CMCC)	+= msm8610-sec-kanas3g-chn-cmcc-r02.dtb
 	dtb-$(CONFIG_MACH_KANAS3G_CMCC)	+= msm8610-sec-kanas3g-chn-cmcc-r03.dtb
-	dtb-$(CONFIG_MACH_KANAS3G_CMCC)	+= msm8610-sec-kanas3g-chn-cmcc-r04.dtb
 else ifeq ($(CONFIG_MACH_KANAS3G_CU),y)
 	dtb-$(CONFIG_SEC_KANAS_PROJECT)	+= msm8610-sec-kanas3g-chn-cu-r00.dtb
 	dtb-$(CONFIG_SEC_KANAS_PROJECT)	+= msm8610-sec-kanas3g-chn-cu-r02.dtb

@@ -5197,11 +5197,17 @@ static int voice_send_dha_data(struct voice_data *v)
 	vpcm_dha_param_send_cmd.hdr.src_port = voice_get_idx_for_session(v->session_id);
 	vpcm_dha_param_send_cmd.hdr.dest_port = cvp_handle;
 	vpcm_dha_param_send_cmd.hdr.token = 0;
+#ifdef CONFIG_MACH_S3VE3G_EUR
+	vpcm_dha_param_send_cmd.hdr.opcode = VSS_ICOMMON_CMD_SET_UI_PROPERTY;
+#else
 	vpcm_dha_param_send_cmd.hdr.opcode = VOICE_CMD_SET_PARAM;
+#endif
 
+#ifndef CONFIG_MACH_S3VE3G_EUR
 	vpcm_dha_param_send_cmd.mem_handle = 0;
 	vpcm_dha_param_send_cmd.mem_address = 0;
 	vpcm_dha_param_send_cmd.mem_size = 40;
+#endif
 
 	vpcm_dha_param_send_cmd.dha_send.module_id = VOICE_MODULE_DHA;
 	vpcm_dha_param_send_cmd.dha_send.param_id = VOICE_PARAM_DHA_DYNAMIC;
@@ -5773,6 +5779,9 @@ static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv)
 			case VSS_IVOCPROC_CMD_DEREGISTER_CALIBRATION_DATA:
 			case VSS_IVOCPROC_CMD_REGISTER_DEVICE_CONFIG:
 			case VSS_IVOCPROC_CMD_DEREGISTER_DEVICE_CONFIG:
+#ifdef CONFIG_MACH_S3VE3G_EUR
+			case VSS_ICOMMON_CMD_SET_UI_PROPERTY:
+#endif
 			case VSS_ICOMMON_CMD_MAP_MEMORY:
 			case VSS_ICOMMON_CMD_UNMAP_MEMORY:
 			case VSS_IVOLUME_CMD_MUTE_V2:

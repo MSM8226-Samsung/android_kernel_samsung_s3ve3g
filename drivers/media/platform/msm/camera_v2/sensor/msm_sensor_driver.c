@@ -46,7 +46,7 @@ static struct msm_sensor_fn_t sr352_sensor_func_tbl = {
 	.sensor_config = sr352_sensor_config,
 	.sensor_power_up = msm_sensor_power_up,
 	.sensor_power_down = msm_sensor_power_down,
-	.sensor_match_id = sr352_sensor_match_id,
+	.sensor_match_id = msm_sensor_match_id,
 	.sensor_native_control = sr352_sensor_native_control,
 };
 #endif
@@ -56,7 +56,7 @@ static struct msm_sensor_fn_t sr130pc20_sensor_func_tbl = {
 	.sensor_config = sr130pc20_sensor_config,
 	.sensor_power_up = msm_sensor_power_up,
 	.sensor_power_down = msm_sensor_power_down,
-	.sensor_match_id = sr130pc20_sensor_match_id,
+	.sensor_match_id = msm_sensor_match_id,
 	.sensor_native_control = sr130pc20_sensor_native_control,
 };
 #endif

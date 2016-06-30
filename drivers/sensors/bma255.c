@@ -205,7 +205,7 @@ exit:
 }
 
 static int bma255_i2c_read(struct bma255_p *data,
-		unsigned char reg_addr, unsigned char *buf, unsigned int len)
+		unsigned char reg_addr, unsigned char *buf)
 {
 	int ret, retries = 0;
 	struct i2c_msg msg[2];
@@ -217,7 +217,7 @@ static int bma255_i2c_read(struct bma255_p *data,
 
 	msg[1].addr = data->client->addr;
 	msg[1].flags = I2C_M_RD;
-	msg[1].len = len;
+	msg[1].len = 1;
 	msg[1].buf = buf;
 
 	do {
@@ -274,8 +274,8 @@ static int bma255_set_mode(struct bma255_p *data, unsigned char mode)
 
 	mutex_lock(&data->mode_mutex);
 
-	ret = bma255_i2c_read(data, BMA255_MODE_CTRL_REG, &buf1, 1);
-	ret += bma255_i2c_read(data, BMA255_LOW_NOISE_CTRL_REG, &buf2, 1);
+	ret = bma255_i2c_read(data, BMA255_MODE_CTRL_REG, &buf1);
+	ret += bma255_i2c_read(data, BMA255_LOW_NOISE_CTRL_REG, &buf2);
 
 	switch (mode) {
 	case BMA255_MODE_NORMAL:
@@ -336,7 +336,7 @@ static int bma255_set_range(struct bma255_p *data, unsigned char range)
 	int ret = 0 ;
 	unsigned char buf;
 
-	ret = bma255_i2c_read(data, BMA255_RANGE_SEL_REG, &buf, 1);
+	ret = bma255_i2c_read(data, BMA255_RANGE_SEL_REG, &buf);
 
 	switch (range) {
 	case BMA255_RANGE_2G:
@@ -370,7 +370,7 @@ static int bma255_set_bandwidth(struct bma255_p *data,
 	if (bandwidth <= 7 || bandwidth >= 16)
 		bandwidth = BMA255_BW_250HZ;
 
-	ret = bma255_i2c_read(data, BMA255_BANDWIDTH__REG, &buf, 1);
+	ret = bma255_i2c_read(data, BMA255_BANDWIDTH__REG, &buf);
 	buf = BMA255_SET_BITSLICE(buf, BMA255_BANDWIDTH, bandwidth);
 	ret += bma255_i2c_write(data, BMA255_BANDWIDTH__REG, buf);
 
@@ -380,10 +380,14 @@ static int bma255_set_bandwidth(struct bma255_p *data,
 
 static int bma255_read_accel_xyz(struct bma255_p *data,	struct bma255_v *acc)
 {
-	int ret = 0;
+	int ret = 0, i;
 	unsigned char buf[READ_DATA_LENTH];
 
-	ret = bma255_i2c_read(data,	BMA255_ACC_X12_LSB__REG, buf, READ_DATA_LENTH);
+	for (i = 0; i < READ_DATA_LENTH; i++) {
+		ret += bma255_i2c_read(data,
+				BMA255_ACC_X12_LSB__REG + i, &buf[i]);
+	}
+
 	if (ret < 0)
 		goto exit;
 
@@ -775,7 +779,7 @@ static void bma255_set_int_enable(struct bma255_p *data,
 {
 	unsigned char reg;
 
-	bma255_i2c_read(data, BMA255_INT_ENABLE1_REG, &reg, 1);
+	bma255_i2c_read(data, BMA255_INT_ENABLE1_REG, &reg);
 
 	switch (InterruptType) {
 	case SLOPE_X_INT:
@@ -803,16 +807,16 @@ static void bma255_slope_enable(struct bma255_p *data,
 	unsigned char reg;
 
 	if (enable == ON) {
-		bma255_i2c_read(data, BMA255_EN_INT1_PAD_SLOPE__REG, &reg, 1);
+		bma255_i2c_read(data, BMA255_EN_INT1_PAD_SLOPE__REG, &reg);
 		reg = BMA255_SET_BITSLICE(reg, BMA255_EN_INT1_PAD_SLOPE, ON);
 		bma255_i2c_write(data, BMA255_EN_INT1_PAD_SLOPE__REG, reg);
 
-		bma255_i2c_read(data, BMA255_INT_MODE_SEL__REG, &reg, 1);
+		bma255_i2c_read(data, BMA255_INT_MODE_SEL__REG, &reg);
 		reg = BMA255_SET_BITSLICE(reg, BMA255_INT_MODE_SEL, 0x01);
 		bma255_i2c_write(data, BMA255_INT_MODE_SEL__REG, reg);
 
 		if (factory_mode == OFF) {
-			bma255_i2c_read(data, BMA255_SLOPE_DUR__REG, &reg, 1);
+			bma255_i2c_read(data, BMA255_SLOPE_DUR__REG, &reg);
 			reg = BMA255_SET_BITSLICE(reg, BMA255_SLOPE_DUR,
 					SLOPE_DURATION_VALUE);
 			bma255_i2c_write(data, BMA255_SLOPE_DUR__REG, reg);
@@ -824,7 +828,7 @@ static void bma255_slope_enable(struct bma255_p *data,
 			bma255_set_int_enable(data, SLOPE_Y_INT, ON);
 			bma255_set_int_enable(data, SLOPE_Z_INT, ON);
 		} else {
-			bma255_i2c_read(data, BMA255_SLOPE_DUR__REG, &reg, 1);
+			bma255_i2c_read(data, BMA255_SLOPE_DUR__REG, &reg);
 			reg = BMA255_SET_BITSLICE(reg, BMA255_SLOPE_DUR, 0x01);
 			bma255_i2c_write(data, BMA255_SLOPE_DUR__REG, reg);
 
@@ -835,7 +839,7 @@ static void bma255_slope_enable(struct bma255_p *data,
 			bma255_set_bandwidth(data, BMA255_BW_250HZ);
 		}
 	} else if (enable == OFF) {
-		bma255_i2c_read(data, BMA255_EN_INT1_PAD_SLOPE__REG, &reg, 1);
+		bma255_i2c_read(data, BMA255_EN_INT1_PAD_SLOPE__REG, &reg);
 		reg = BMA255_SET_BITSLICE(reg, BMA255_EN_INT1_PAD_SLOPE, OFF);
 		bma255_i2c_write(data, BMA255_EN_INT1_PAD_SLOPE__REG, reg);
 

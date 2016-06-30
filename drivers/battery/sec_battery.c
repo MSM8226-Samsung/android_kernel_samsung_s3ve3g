@@ -412,7 +412,6 @@ static bool sec_bat_check_by_psy(struct sec_battery_info *battery)
 {
 	char *psy_name;
 	union power_supply_propval value;
-	struct power_supply *psy;
 	bool ret;
 	ret = true;
 
@@ -433,21 +432,10 @@ static bool sec_bat_check_by_psy(struct sec_battery_info *battery)
 		goto battery_check_error;
 		break;
 	}
-	psy = power_supply_get_by_name(psy_name);
-	if(!psy) {
-		dev_err(battery->dev,
-				"%s: Fail to get psy(%s)\n", __func__, psy_name);
-	} else {
-		int rc = 0;
-		rc = psy->get_property(psy, POWER_SUPPLY_PROP_PRESENT, &value);
-		if (rc < 0) {
-			dev_err(battery->dev,
-					"%s: Fail to get property(%d)\n", __func__, rc);
 
-		} else {
-			ret = (bool)value.intval;
-		}
-	}
+	psy_do_property(psy_name, get,
+		POWER_SUPPLY_PROP_PRESENT, value);
+	ret = (bool)value.intval;
 
 battery_check_error:
 	return ret;
@@ -1637,9 +1625,6 @@ static bool sec_bat_fullcharged_check(
 
 	return true;
 }
-#if defined(CONFIG_MACH_MILLETLTE_ATT)
-extern unsigned int system_rev;
-#endif
 
 static void sec_bat_get_battery_info(
 				struct sec_battery_info *battery)
@@ -1741,11 +1726,6 @@ static void sec_bat_get_battery_info(
 	}
 #else
 	battery->capacity = value.intval;
-#endif
-#if defined(CONFIG_MACH_MILLETLTE_ATT)
-	if(system_rev<1){
-		battery->capacity = 70;
-	}
 #endif
 
 	dev_info(battery->dev,
@@ -3291,13 +3271,6 @@ static int sec_ps_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
 		if (battery->ps_status) {
-			if ((battery->ps_enable == true) && (battery->ps_changed == true)) {
-				battery->ps_changed = false;
-
-				value.intval = POWER_SUPPLY_TYPE_POWER_SHARING;
-				psy_do_property(battery->pdata->charger_name, set,
-						POWER_SUPPLY_PROP_ONLINE, value);
-			}
 			val->intval = 1;
 		} else {
 			if (battery->ps_enable == true) {
@@ -3428,9 +3401,6 @@ static int batt_handle_notification(struct notifier_block *nb,
 			__func__, cable_type);
 	} else if (cable_type == POWER_SUPPLY_TYPE_POWER_SHARING) {
 		battery->ps_status = true;
-		battery->ps_enable = true;
-		battery->ps_changed = true;
-
 		dev_info(battery->dev,
 			"%s: power sharing cable plugin (%d)\n", __func__, battery->ps_status);
 	} else if (cable_type == POWER_SUPPLY_TYPE_WIRELESS) {
@@ -3887,7 +3857,6 @@ static int __devinit sec_battery_probe(struct platform_device *pdev)
 
 	battery->wc_status = 0;
 	battery->ps_status= 0;
-	battery->ps_changed= 0;
 	battery->wire_status = POWER_SUPPLY_TYPE_BATTERY;
 
 	alarm_init(&battery->event_termination_alarm,

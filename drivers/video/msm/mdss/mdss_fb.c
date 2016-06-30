@@ -766,6 +766,9 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 			mfd->bl_level = bkl_lvl;
 			return;
 		}
+#if defined(CONFIG_MACH_S3VE3G_EUR)
+		if(mfd->panel_power_on == true)
+#endif
 		pdata->set_backlight(pdata, temp);
 		mfd->bl_level = bkl_lvl;
 		mfd->bl_level_old = temp;

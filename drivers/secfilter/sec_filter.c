@@ -25,14 +25,13 @@ static  struct  cdev    url_cdev;
 static  struct  class   *url_class  = NULL;
 
 static  DECLARE_WAIT_QUEUE_HEAD(user_noti_Q);
-static  tcp_Info_Manager    *getting_TrackInfo = NULL;
+static  tcp_Info_Manager    *getting_TrackInfo= NULL;
 static  tcp_Info_Manager    *notifying_TrackInfo = NULL;
 static  tcp_Info_Manager    *notified_TrackInfo = NULL;
 static  tcp_Info_Manager    *rejected_TrackInfo	= NULL;
 static  char                *exceptionURL       = NULL;
-static  atomic_t            totalReference      = ATOMIC_INIT(0);
-static  unsigned long       resetTime           = 0;
-static  int                 closingTime         = 60;
+static  atomic_t		totalReference	= ATOMIC_INIT(0);
+static  unsigned long       resetTime               = 0;
 char    *errorMsg   = NULL;
 int     errMsgSize  = 0;
 int     filterMode  = FILTER_MODE_OFF;
@@ -55,7 +54,7 @@ int sec_url_filter_release( struct inode *inode, struct file *filp)
     {
     	if (filterMode != FILTER_MODE_OFF)
     	{
-            resetTime   = get_jiffies_64()+closingTime*HZ;
+            resetTime   = get_jiffies_64()+60*HZ;
             filterMode  = FILTER_MODE_CLOSING;
     	}
         wake_up_interruptible(&user_noti_Q);
@@ -163,17 +162,6 @@ ssize_t sec_url_filter_write( struct file *filp, const char *buf, size_t count, 
                         }
                     }
                     break;
-    	            case    SET_CLOSING_TIME:
-                    {
-                        int timedata = *((int *)(data));
-                        if ((timedata > 0) && (timedata <60))
-                        {
-                            closingTime = *(int *)data;
-                            printk("SEC_URL_FILTER : TIMER IS %d\n", closingTime);
-                        }
-                        result = count;
-                    }
-                    break;
                 }
             }
         }
@@ -189,10 +177,10 @@ ssize_t	sec_url_filter_read( struct file *filp, char *buf, size_t count, loff_t 
     int             leftLen     = 0;
     int             writeCount  = count;
     int             notifyFlag  = 0;
-    int             loopCount   = 0;
+    
     if (buf != NULL)
     {
-        while ((filterMode)&&(loopCount < 3))
+        while (filterMode)
         {
             unsigned long   flags = 0;
             SEC_spin_lock_irqsave(&notifying_TrackInfo->tcp_info_lock, flags);
@@ -227,7 +215,6 @@ ssize_t	sec_url_filter_read( struct file *filp, char *buf, size_t count, loff_t 
             else
             {
                 interruptible_sleep_on(&user_noti_Q);
-                loopCount++;
             }
         }
     }
@@ -471,15 +458,7 @@ int nfilter_init (void)
         if ((add_result = cdev_add(&url_cdev, url_ver, 1)) <0) break;
         if ((add_send_hook =nf_register_hook( &sec_url_filter)) <0) break;
         if (nf_register_hook( &sec_url_recv_filter) <0) break;
-#ifdef  _NF_CHECK_REGISTER_NULL
-        if (nf_register_queue_handler_is_null())
-        {
-             pr_info("%s:%s SEC_URL_FILTER : queue handler is null!\n", __FILE__, __func__);
-#endif
         nf_register_queue_handler(PF_INET, &sec_url_queue_handler);
-#ifdef  _NF_CHECK_REGISTER_NULL
-        }
-#endif
         return 0;
     }while(0);
     deInit_Managers();
@@ -512,7 +491,7 @@ void nfilter_exit(void)
 #ifdef CONFIG_SEC_NET_FILTER
 EXPORT_SYMBOL(sec_url_filter_slow);
 #endif
-late_initcall(nfilter_init);
+module_init(nfilter_init);
 module_exit(nfilter_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("SAMSUNG Electronics");

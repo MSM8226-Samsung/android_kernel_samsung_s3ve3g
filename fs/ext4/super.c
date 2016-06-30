@@ -2322,6 +2322,17 @@ struct ext4_attr {
 	int offset;
 };
 
+static int parse_strtoull(const char *buf,
+		unsigned long long max, unsigned long long *value)
+{
+	int ret;
+
+	ret = kstrtoull(skip_spaces(buf), 0, value);
+	if (!ret && *value > max)
+		ret = -EINVAL;
+	return ret;
+}
+
 static int parse_strtoul(const char *buf,
 		unsigned long max, unsigned long *value)
 {
@@ -2367,6 +2378,25 @@ static ssize_t lifetime_write_kbytes_show(struct ext4_attr *a,
 			(unsigned long long)(sbi->s_kbytes_written +
 			((part_stat_read(sb->s_bdev->bd_part, sectors[1]) -
 			  EXT4_SB(sb)->s_sectors_written_start) >> 1)));
+}
+
+static ssize_t r_blocks_count_show(struct ext4_attr *a,
+		struct ext4_sb_info *sbi, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%llu\n",
+		(unsigned long long) atomic64_read(&sbi->s_r_blocks_count));
+}
+
+static ssize_t r_blocks_count_store(struct ext4_attr *a,
+		struct ext4_sb_info *sbi, const char *buf, size_t count)
+{
+	unsigned long long val;
+
+	if (parse_strtoull(buf, -1ULL, &val))
+		return -EINVAL;
+	atomic64_set(&sbi->s_r_blocks_count, val);
+
+	return count;
 }
 
 static ssize_t inode_readahead_blks_store(struct ext4_attr *a,
@@ -2426,6 +2456,7 @@ static struct ext4_attr ext4_attr_##name = __ATTR(name, mode, show, store)
 EXT4_RO_ATTR(delayed_allocation_blocks);
 EXT4_RO_ATTR(session_write_kbytes);
 EXT4_RO_ATTR(lifetime_write_kbytes);
+EXT4_RW_ATTR(r_blocks_count);
 EXT4_ATTR_OFFSET(inode_readahead_blks, 0644, sbi_ui_show,
 		 inode_readahead_blks_store, s_inode_readahead_blks);
 EXT4_RW_ATTR_SBI_UI(inode_goal, s_inode_goal);
@@ -2441,6 +2472,7 @@ static struct attribute *ext4_attrs[] = {
 	ATTR_LIST(delayed_allocation_blocks),
 	ATTR_LIST(session_write_kbytes),
 	ATTR_LIST(lifetime_write_kbytes),
+	ATTR_LIST(r_blocks_count),
 	ATTR_LIST(inode_readahead_blks),
 	ATTR_LIST(inode_goal),
 	ATTR_LIST(mb_stats),
@@ -3676,6 +3708,8 @@ no_journal:
 			 "available");
 	}
 
+	atomic64_set(&sbi->s_r_blocks_count, ext4_r_blocks_count(es));
+
 	err = ext4_setup_system_zone(sb);
 	if (err) {
 		ext4_msg(sb, KERN_ERR, "failed to initialize system "
@@ -4549,8 +4583,8 @@ static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf)
 		percpu_counter_sum_positive(&sbi->s_dirtyclusters_counter);
 	/* prevent underflow in case that few free space is available */
 	buf->f_bfree = EXT4_C2B(sbi, max_t(s64, bfree, 0));
-	buf->f_bavail = buf->f_bfree - ext4_r_blocks_count(es);
-	if (buf->f_bfree < ext4_r_blocks_count(es))
+	buf->f_bavail = buf->f_bfree - atomic64_read(&sbi->s_r_blocks_count);
+	if (buf->f_bfree < atomic64_read(&sbi->s_r_blocks_count))
 		buf->f_bavail = 0;
 	buf->f_files = le32_to_cpu(es->s_inodes_count);
 	buf->f_ffree = percpu_counter_sum_positive(&sbi->s_freeinodes_counter);

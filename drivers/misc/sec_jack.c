@@ -506,9 +506,8 @@ static irqreturn_t sec_jack_detect_irq(int irq, void *dev_id)
 		struct sec_jack_info *hi = dev_id;
 		disable_irq_wake(hi->det_irq);
 		queue_work(hi->queue, &hi->detect_work);
-		mdelay(100);
+		mdelay(20);
 		enable_irq_wake(hi->det_irq);
-		pr_info("%s: Debug code for removing flooding of jack irq\n", __func__);
 		return IRQ_HANDLED;
 #else
 	struct sec_jack_info *hi = dev_id;

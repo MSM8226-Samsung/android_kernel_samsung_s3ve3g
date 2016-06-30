@@ -581,15 +581,6 @@ static struct msm_gpiomux_config msm_sensors_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &sensor_cfg[0],
 		},
 	},
-#if defined(CONFIG_MACH_LT03_EUR)
-	{
-		.gpio = 82,
-		.settings = {
-			[GPIOMUX_ACTIVE]    = &sensor_cfg[0],
-			[GPIOMUX_SUSPENDED] = &sensor_cfg[0],
-		},
-	},
-#else
 	{
 		.gpio = 82,
 		.settings = {
@@ -597,7 +588,6 @@ static struct msm_gpiomux_config msm_sensors_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &sensor_cfg[1],
 		},
 	},
-#endif
 	{
 		.gpio = 81,
 		.settings = {
@@ -1441,7 +1431,7 @@ static struct msm_gpiomux_config ear_send_end_config[] __initdata = {
 		},
 	},
 };
-#if defined(CONFIG_MACH_LT03_VZW) || defined(CONFIG_MACH_LT03_EUR)
+#ifdef CONFIG_MACH_LT03_VZW || defined(CONFIG_MACH_LT03_EUR)
 static struct msm_gpiomux_config spk_ext_config[] __initdata = {
 	{
 		.gpio	= 43,		/* SPK AMP ENABLE */
@@ -2016,7 +2006,7 @@ void __init msm_8974_init_gpiomux(void)
 
 	msm_gpiomux_install(msm_taiko_config, ARRAY_SIZE(msm_taiko_config));
 	msm_gpiomux_install(ear_send_end_config, ARRAY_SIZE(ear_send_end_config));
-#if defined(CONFIG_MACH_LT03_VZW) || defined(CONFIG_MACH_LT03_EUR)
+#ifdef CONFIG_MACH_LT03_VZW || defined(CONFIG_MACH_LT03_EUR)
 	msm_gpiomux_install(spk_ext_config, ARRAY_SIZE(spk_ext_config));
 #endif
 	

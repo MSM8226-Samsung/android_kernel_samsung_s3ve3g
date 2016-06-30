@@ -1186,7 +1186,7 @@ static struct msm_gpiomux_config sd_card_det __initdata = {
 static struct msm_gpiomux_config msm_sensor_configs[] __initdata = {
 	{
 		.gpio = 15, /* CAM_MCLK0 */
-#if !defined(CONFIG_MACH_KLTE_CHN) && !defined(CONFIG_MACH_K3GDUOS_CTC)
+#if !defined(CONFIG_MACH_KLTE_CHN)
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &cam_settings[0],
 			[GPIOMUX_SUSPENDED] = &gpio_suspend_config[3],

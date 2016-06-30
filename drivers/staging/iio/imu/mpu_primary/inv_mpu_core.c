@@ -399,7 +399,6 @@ static int inv_init_config(struct iio_dev *indio_dev)
 		st->self_test.samples = INIT_ST_SAMPLES;
 	st->self_test.threshold = INIT_ST_THRESHOLD;
 	st->batch.wake_fifo_on = true;
-	st->suspend_state = false;
 	if (INV_ITG3500 != st->chip_type) {
 		st->chip_config.accel_fs = INV_FS_02G;
 		result = inv_i2c_single_write(st, reg->accel_config,
@@ -431,8 +430,6 @@ static int inv_init_config(struct iio_dev *indio_dev)
 		st->lcd_pos.down_y = 153;
 		st->lcd_pos.down_z = -867;
 
-		st->qshot.start_angle = INIT_QSHOT_START_ANGLE;
-		st->qshot.finish_angle = INIT_QSHOT_FINISH_ANGLE;
 		result = inv_i2c_single_write(st, REG_ACCEL_MOT_DUR,
 						INIT_MOT_DUR);
 		if (result)
@@ -852,54 +849,6 @@ static int inv_enable_lcd_pos(struct inv_mpu_state *st, bool on)
 	return result;
 }
 
-
-static ssize_t _dmp_shealth_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	struct inv_mpu_state *st = iio_priv(indio_dev);
-	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
-	int result, data;
-
-	if (!st->chip_config.firmware_loaded)
-		return -EINVAL;
-
-	result = kstrtoint(buf, 10, &data);
-	if (result)
-		goto dmp_mem_store_fail;
-
-	switch (this_attr->address) {
-		case ATTR_DMP_SHEALTH_ENABLE:
-		{
-			result = inv_enable_shealth(st, !!data);
-			if (result)
-				goto dmp_mem_store_fail;
-		}
-		break;
-
-		case ATTR_DMP_SHEALTH_INTERRUPT_PERIOD:
-		{
-			result = inv_set_shealth_interrupt_period(st,(s16)data);
-			if (result)
-				goto dmp_mem_store_fail;
-
-			st->shealth.interrupt_duration = (s16) data;
-		}
-		break;
-
-		default:
-			result = -EINVAL;
-			goto dmp_mem_store_fail;
-	}
-
-dmp_mem_store_fail:
-	if (result)
-		return result;
-
-	return count;
-}
-
-
 static ssize_t _dmp_mem_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -919,7 +868,6 @@ static ssize_t _dmp_mem_store(struct device *dev,
 	result = kstrtoint(buf, 10, &data);
 	if (result)
 		goto dmp_mem_store_fail;
-
 	switch (this_attr->address) {
 	case ATTR_DMP_PED_INT_ON:
 		result = inv_enable_pedometer_interrupt(st, !!data);
@@ -932,12 +880,6 @@ static ssize_t _dmp_mem_store(struct device *dev,
 		result = inv_enable_pedometer(st, !!data);
 		if (result)
 			goto dmp_mem_store_fail;
-
-		/*turn off as default*/
-		result = inv_enable_shealth(st, false);
-		if (result)
-			goto dmp_mem_store_fail;
-
 		st->ped.on = !!data;
 		break;
 	}
@@ -990,7 +932,42 @@ static ssize_t _dmp_mem_store(struct device *dev,
 			goto dmp_mem_store_fail;
 		st->smd.delay2 = data;
 		break;
-
+	case ATTR_DMP_TAP_ON:
+		result = inv_enable_tap_dmp(st, !!data);
+		if (result)
+			goto dmp_mem_store_fail;
+		st->tap.on = !!data;
+		break;
+	case ATTR_DMP_TAP_THRESHOLD:
+		if (data < 0 || data > USHRT_MAX) {
+			result = -EINVAL;
+			goto dmp_mem_store_fail;
+		}
+		result = inv_set_tap_threshold_dmp(st, data);
+		if (result)
+			goto dmp_mem_store_fail;
+		st->tap.thresh = data;
+		break;
+	case ATTR_DMP_TAP_MIN_COUNT:
+		if (data < 0 || data > USHRT_MAX) {
+			result = -EINVAL;
+			goto dmp_mem_store_fail;
+		}
+		result = inv_set_min_taps_dmp(st, data);
+		if (result)
+			goto dmp_mem_store_fail;
+		st->tap.min_count = data;
+		break;
+	case ATTR_DMP_TAP_TIME:
+		if (data < 0 || data > USHRT_MAX) {
+			result = -EINVAL;
+			goto dmp_mem_store_fail;
+		}
+		result = inv_set_tap_time_dmp(st, data);
+		if (result)
+			goto dmp_mem_store_fail;
+		st->tap.time = data;
+		break;
 	case ATTR_DMP_LCD_POS_ENABLE:
 		result = inv_enable_lcd_pos(st, !!data);
 		if (result)
@@ -1040,31 +1017,6 @@ static ssize_t _dmp_mem_store(struct device *dev,
 			goto dmp_mem_store_fail;
 		st->lcd_pos.down_z = data;
 		break;
-	case ATTR_DMP_QSHOT_START_ANGLE:
-		result = inv_set_Qshot_start_angle(st, data);
-		if (result)
-			goto dmp_mem_store_fail;
-		st->qshot.start_angle = data;
-		break;
-	case ATTR_DMP_QSHOT_FINISH_ANGLE:
-		result = inv_set_Qshot_finish_angle(st, data);
-		if (result)
-			goto dmp_mem_store_fail;
-		st->qshot.finish_angle = data;
-		break;
-	case ATTR_DMP_QSHOT_START_INT_ENABLE:
-		result = inv_enable_Qshot_start_interrupt_klp(st, !!data);
-		if (result)
-			goto dmp_mem_store_fail;
-
-		st->qshot.start_int_enable = !!data;
-		break;
-	case ATTR_DMP_QSHOT_FINISH_INT_ENABLE:
-		result = inv_enable_Qshot_finish_interrupt_klp(st, !!data);
-		if (result)
-			goto dmp_mem_store_fail;
-		st->qshot.finish_int_enable = !!data;
-		break;
 	case ATTR_DMP_DISPLAY_ORIENTATION_ON:
 		result = inv_set_display_orient_interrupt_dmp(st, !!data);
 		if (result)
@@ -1108,19 +1060,6 @@ dmp_mem_store_fail:
 	return count;
 }
 
-static ssize_t inv_dmp_shealth_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-	int result;
-
-	mutex_lock(&indio_dev->mlock);
-	result = _dmp_shealth_store(dev, attr, buf, count);
-	mutex_unlock(&indio_dev->mlock);
-
-	return result;
-}
-
 /*
  * inv_dmp_mem_store() -  calling this function will store DMP memory data
  */
@@ -1135,33 +1074,6 @@ static ssize_t inv_dmp_mem_store(struct device *dev,
 	mutex_unlock(&indio_dev->mlock);
 
 	return result;
-}
-
-static void inv_shealth_timer_func(unsigned long data)
-{
-	struct inv_mpu_state *st =(struct inv_mpu_state*)data;
-
-	pr_info("%s\n", __func__);
-
-	schedule_work(&st->shealth.work);
-}
-
-
-static void inv_shealth_sched_work(struct work_struct *data)
-{
-	struct inv_mpu_state *st =
-		(struct inv_mpu_state *)container_of(data, struct inv_mpu_state, shealth.work);
-	struct iio_dev *indio_dev = (struct iio_dev*) i2c_get_clientdata(st->client);
-
-	pr_info("%s\n", __func__);
-
-	mutex_lock(&indio_dev->mlock);
-	if(st->shealth.state == SHEALTH_STAT_WALK && !st->shealth.enabled) {
-		st->shealth.state = SHEALTH_STAT_STOP;
-		st->shealth.interrupt_mask |= SHEALTH_INT_STOP_WALKING;
-		complete(&st->shealth.wait);
-	}
-	mutex_unlock(&indio_dev->mlock);
 }
 
 static ssize_t inv_attr64_show(struct device *dev,
@@ -1185,41 +1097,10 @@ static ssize_t inv_attr64_show(struct device *dev,
 		result = inv_get_pedometer_steps(st, &ped);
 		result |= inv_read_pedometer_counter(st);
 		tmp = st->ped.step + ped;
-
-		if(tmp != st->shealth.step_count) {
-			bool needs_to_complete = false;
-
-			pr_info("shealth step counter = %lld\n", tmp );
-			if(!st->shealth.enabled) {
-				st->shealth.interrupt_mask |= SHEALTH_INT_STEP_COUNTER;
-
-				/*enable stop counter*/
-				del_timer(&st->shealth.timer);
-				st->shealth.timer.expires = jiffies + 2*HZ;
-				add_timer(&st->shealth.timer);
-
-				needs_to_complete = true;
-			}
-
-			st->shealth.step_count = tmp;
-
-			if(st->shealth.state == SHEALTH_STAT_STOP) {
-				st->shealth.state = SHEALTH_STAT_WALK;
-				if(!st->shealth.enabled) {
-					st->shealth.interrupt_mask |= SHEALTH_INT_START_WALKING;
-					needs_to_complete = true;
-				}
-			}
-
-			if(needs_to_complete)
-				complete(&st->shealth.wait);
-
-
-		}
 		break;
 	case ATTR_DMP_PEDOMETER_TIME:
 		result = inv_get_pedometer_time(st, &ped);
-		tmp = (u64)st->ped.time + ((u64)ped) * MS_PER_PED_TICKS;
+		tmp = st->ped.time + ped;
 		break;
 	case ATTR_DMP_PEDOMETER_COUNTER:
 		tmp = st->ped.last_step_time;
@@ -1392,14 +1273,6 @@ static ssize_t inv_attr_show(struct device *dev,
 		return sprintf(buf, "%d\n", st->lcd_pos.down_y);
 	case ATTR_DMP_LCD_POS_DOWN_Z_THRESH:
 		return sprintf(buf, "%d\n", st->lcd_pos.down_z);
-	case ATTR_DMP_QSHOT_START_ANGLE:
-		return sprintf(buf, "%d\n", st->qshot.start_angle);
-	case ATTR_DMP_QSHOT_FINISH_ANGLE:
-		return sprintf(buf, "%d\n", st->qshot.finish_angle);
-	case ATTR_DMP_QSHOT_START_INT_ENABLE:
-		return sprintf(buf, "%d\n", st->qshot.start_int_enable);
-	case ATTR_DMP_QSHOT_FINISH_INT_ENABLE:
-		return sprintf(buf, "%d\n", st->qshot.finish_int_enable);
 	case ATTR_DMP_DISPLAY_ORIENTATION_ON:
 		return sprintf(buf, "%d\n",
 			st->chip_config.display_orient_on);
@@ -1507,7 +1380,7 @@ static ssize_t inv_attr_show(struct device *dev,
 	case ATTR_SECONDARY_NAME:
 	{
 		const char *n[] = {"NULL", "AK8975", "AK8972", "AK8963",
-					"BMA250", "MLX90399", "AK09911"};
+					"BMA250", "MLX90399", "AK09901"};
 		switch (st->plat_data.sec_slave_id) {
 		case COMPASS_ID_AK8975:
 			return sprintf(buf, "%s\n", n[1]);
@@ -1562,78 +1435,6 @@ static ssize_t inv_attr_show(struct device *dev,
 		return sprintf(buf, "%d\n", (int)be32_to_cpup((__be32 *)(d)));
 	}
 #endif
-	case ATTR_DMP_SHEALTH_CADENCE:
-	{
-		int i = 0;
-		char concat[256];
-		s32 cadence = 0;
-		s64 start_timestamp = 0, end_timestamp = 0;
-		bool is_data_ready = false;
-		//static s32 cadence_buffer = 0;
-
-		if(st->shealth.enabled ||st->shealth.stop_timestamp > 0)
-			is_data_ready = true;
-
-		if(is_data_ready) {
-			if(st->shealth.start_timestamp > 0)
-				start_timestamp = st->shealth.start_timestamp;
-
-			if(st->shealth.stop_timestamp > 0)
-				end_timestamp = st->shealth.stop_timestamp;
-			else if(st->shealth.interrupt_timestamp > 0)
-				end_timestamp = st->shealth.interrupt_timestamp;
-			else
-				end_timestamp = get_time_ns();
-		}
-
-		/*start timestamp*/
-		sprintf(concat, "%lld,", start_timestamp);
-		strcat(buf, concat);
-
-		/*interrupt or stop timestap*/
-		sprintf(concat, "%lld,", end_timestamp);
-		strcat(buf, concat);
-
-		/*valid count of cadence*/
-		sprintf(concat, "%d,", st->shealth.valid_count);
-		strcat(buf, concat);
-
-		for( i = 0; i < SHEALTH_CADENCE_LEN - 1; i++) {
-			if(is_data_ready)
-				cadence = st->shealth.cadence[i];
-			sprintf(concat, "%d,", cadence);
-			strcat(buf, concat);
-		}
-
-		strcat(buf, "\n");
-
-		return strlen(buf);
-	}
-
-	case ATTR_DMP_SHEALTH_ENABLE:
-	{
-		return sprintf(buf, "%d\n", st->shealth.enabled);
-	}
-
-	case ATTR_DMP_SHEALTH_INTERRUPT_PERIOD:
-	{
-		return sprintf(buf, "%d\n", st->shealth.interrupt_duration);
-	}
-
-	case ATTR_DMP_SHEALTH_INSTANT_CADENCE:
-	{
-		return inv_shealth_instant_cadence(st, buf);
-	}
-	case ATTR_DMP_SHEALTH_FLUSH_CADENCE:
-	{
-		inv_shealth_instant_cadence(st, buf);
-		inv_clear_shealth_cadence(st);
-		st->shealth.start_timestamp = get_time_ns();
-		st->shealth.stop_timestamp = -1;
-		st->shealth.interrupt_timestamp = -1;
-		return strlen(buf);
-	}
-
 	default:
 		return -EPERM;
 	}
@@ -1691,46 +1492,6 @@ static ssize_t inv_lcd_pos_show(struct device *dev,
 	struct inv_mpu_state *st = iio_priv(dev_get_drvdata(dev));
 
 	return sprintf(buf, "%d\n", st->lcd_pos.data);
-}
-/*
- * inv_qshot_start_show() - calling this function showes qshot start interrupt.
- *                         This event must use poll.
- */
-static ssize_t inv_qshot_start_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	return sprintf(buf, "1\n");
-}
-
-/*
- * inv_qshot_finish_show() - this function showes qshot finish interrupt.
- *                         This event must use poll.
- */
-static ssize_t inv_qshot_finish_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	return sprintf(buf, "1\n");
-}
-
-static ssize_t inv_shealth_int_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	struct inv_mpu_state *st = iio_priv(dev_get_drvdata(dev));
-	//long val;
-	//unsigned long flags;
-	u16 interrupt_mask;
-
-	pr_info("%s enter \n", __func__);
-
-	wait_for_completion_interruptible(&st->shealth.wait);
-
-	interrupt_mask = st->shealth.interrupt_mask;
-	st->shealth.interrupt_mask = 0;
-
-	pr_info("%s exit. interrupt_mask:%d \n", __func__, interrupt_mask);
-
-
-	return sprintf(buf, "%d\n", interrupt_mask);
 }
 
 /*
@@ -2423,9 +2184,6 @@ static DEVICE_ATTR(event_accel_motion, S_IRUGO, inv_accel_motion_show, NULL);
 static DEVICE_ATTR(event_smd, S_IRUGO, inv_smd_show, NULL);
 static DEVICE_ATTR(event_pedometer, S_IRUGO, inv_ped_show, NULL);
 static DEVICE_ATTR(event_lcd_position, S_IRUGO, inv_lcd_pos_show, NULL);
-static DEVICE_ATTR(event_qshot_start, S_IRUGO, inv_qshot_start_show, NULL);
-static DEVICE_ATTR(event_qshot_finish, S_IRUGO, inv_qshot_finish_show, NULL);
-static DEVICE_ATTR(event_shealth_int, S_IRUGO, inv_shealth_int_show, NULL);
 
 /* master enable method */
 static DEVICE_ATTR(master_enable, S_IRUGO | S_IWUSR, inv_master_enable_show,
@@ -2467,24 +2225,12 @@ static IIO_DEVICE_ATTR(smd_delay_threshold, S_IRUGO | S_IWUSR,
 static IIO_DEVICE_ATTR(smd_delay_threshold2, S_IRUGO | S_IWUSR,
 	inv_attr_show, inv_dmp_mem_store, ATTR_DMP_SMD_DELAY_THLD2);
 
-
 static IIO_DEVICE_ATTR(pedometer_steps, S_IRUGO | S_IWUSR, inv_attr64_show,
 	inv_attr64_store, ATTR_DMP_PEDOMETER_STEPS);
 static IIO_DEVICE_ATTR(pedometer_time, S_IRUGO | S_IWUSR, inv_attr64_show,
 	inv_attr64_store, ATTR_DMP_PEDOMETER_TIME);
 static IIO_DEVICE_ATTR(pedometer_counter, S_IRUGO | S_IWUSR, inv_attr64_show,
 	NULL, ATTR_DMP_PEDOMETER_COUNTER);
-
-static IIO_DEVICE_ATTR(shealth_cadence, S_IRUGO | S_IWUGO, inv_attr_show,
-	NULL, ATTR_DMP_SHEALTH_CADENCE);
-static IIO_DEVICE_ATTR(shealth_cadence_enable, S_IRUGO | S_IWUGO, inv_attr_show,
-	inv_dmp_shealth_store, ATTR_DMP_SHEALTH_ENABLE);
-static IIO_DEVICE_ATTR(shealth_int_period, S_IRUGO | S_IWUGO, inv_attr_show,
-	inv_dmp_shealth_store, ATTR_DMP_SHEALTH_INTERRUPT_PERIOD);
-static IIO_DEVICE_ATTR(shealth_instant_cadence, S_IRUGO | S_IWUGO, inv_attr_show,
-	NULL, ATTR_DMP_SHEALTH_INSTANT_CADENCE);
-static IIO_DEVICE_ATTR(shealth_flush_cadence, S_IRUGO | S_IWUGO, inv_attr_show,
-	NULL, ATTR_DMP_SHEALTH_FLUSH_CADENCE);
 
 static IIO_DEVICE_ATTR(tap_on, S_IRUGO | S_IWUSR,
 	inv_attr_show, inv_dmp_mem_store, ATTR_DMP_TAP_ON);
@@ -2513,15 +2259,6 @@ static IIO_DEVICE_ATTR(lcd_pos_down_y_threshold, S_IRUGO | S_IWUSR,
 	inv_attr_show, inv_dmp_mem_store, ATTR_DMP_LCD_POS_DOWN_Y_THRESH);
 static IIO_DEVICE_ATTR(lcd_pos_down_z_threshold, S_IRUGO | S_IWUSR,
 	inv_attr_show, inv_dmp_mem_store, ATTR_DMP_LCD_POS_DOWN_Z_THRESH);
-
-static IIO_DEVICE_ATTR(qshot_start_angle, S_IRUGO | S_IWUSR,
-	inv_attr_show, inv_dmp_mem_store, ATTR_DMP_QSHOT_START_ANGLE);
-static IIO_DEVICE_ATTR(qshot_finish_angle, S_IRUGO | S_IWUSR,
-	inv_attr_show, inv_dmp_mem_store, ATTR_DMP_QSHOT_FINISH_ANGLE);
-static IIO_DEVICE_ATTR(qshot_start_int_enable, S_IRUGO | S_IWUSR,
-	inv_attr_show, inv_dmp_mem_store, ATTR_DMP_QSHOT_START_INT_ENABLE);
-static IIO_DEVICE_ATTR(qshot_finish_int_enable, S_IRUGO | S_IWUSR,
-	inv_attr_show, inv_dmp_mem_store, ATTR_DMP_QSHOT_FINISH_INT_ENABLE);
 
 /* DMP sysfs without power on/off */
 static IIO_DEVICE_ATTR(dmp_on, S_IRUGO | S_IWUSR, inv_attr_show,
@@ -2736,7 +2473,6 @@ static const struct attribute *inv_mpu6xxx_attributes[] = {
 	&dev_attr_event_accel_motion.attr,
 	&dev_attr_event_smd.attr,
 	&dev_attr_event_pedometer.attr,
-	&dev_attr_event_shealth_int.attr,
 	&dev_attr_flush_batch.attr,
 	&iio_dev_attr_in_accel_scale.dev_attr.attr,
 	&iio_dev_attr_in_accel_x_calibbias.dev_attr.attr,
@@ -2757,11 +2493,6 @@ static const struct attribute *inv_mpu6xxx_attributes[] = {
 	&iio_dev_attr_pedometer_steps.dev_attr.attr,
 	&iio_dev_attr_pedometer_time.dev_attr.attr,
 	&iio_dev_attr_pedometer_counter.dev_attr.attr,
-	&iio_dev_attr_shealth_cadence.dev_attr.attr,
-	&iio_dev_attr_shealth_cadence_enable.dev_attr.attr,
-	&iio_dev_attr_shealth_int_period.dev_attr.attr,
-	&iio_dev_attr_shealth_instant_cadence.dev_attr.attr,
-	&iio_dev_attr_shealth_flush_cadence.dev_attr.attr,
 	&iio_dev_attr_pedometer_step_thresh.dev_attr.attr,
 	&iio_dev_attr_pedometer_int_thresh.dev_attr.attr,
 	&iio_dev_attr_smd_enable.dev_attr.attr,
@@ -2814,16 +2545,6 @@ static const struct attribute *inv_lcd_pos_attributes[] = {
 	&iio_dev_attr_lcd_pos_down_z_threshold.dev_attr.attr,
 };
 
-static const struct attribute *inv_qshot_attributes[] = {
-	&dev_attr_event_qshot_start.attr,
-	&dev_attr_event_qshot_finish.attr,
-	&iio_dev_attr_qshot_start_angle.dev_attr.attr,
-	&iio_dev_attr_qshot_finish_angle.dev_attr.attr,
-	&iio_dev_attr_qshot_start_int_enable.dev_attr.attr,
-	&iio_dev_attr_qshot_finish_int_enable.dev_attr.attr,
-};
-
-
 static const struct attribute *inv_display_orient_attributes[] = {
 	&dev_attr_event_display_orientation.attr,
 	&iio_dev_attr_display_orientation_on.dev_attr.attr,
@@ -2864,7 +2585,6 @@ static struct attribute *inv_attributes[
 	ARRAY_SIZE(inv_tap_attributes) +
 	ARRAY_SIZE(inv_lcd_pos_attributes) +
 	ARRAY_SIZE(inv_display_orient_attributes) +
-	ARRAY_SIZE(inv_qshot_attributes) +
 	1
 ];
 
@@ -2898,6 +2618,7 @@ static int accel_do_calibrate(struct inv_mpu_state *st, int enable)
 	signed short x, y, z;
 	struct inv_reg_map_s *reg;
 	int result, i;
+	signed short m[9];
 	unsigned char data[6];
 	int acc_enable;
 	struct file *cal_filp;
@@ -2907,6 +2628,9 @@ static int accel_do_calibrate(struct inv_mpu_state *st, int enable)
 	reg = &(st->reg);
 
 	if (enable) {
+		for (i = 0; i < 9; i++)
+			m[i] = st->plat_data.orientation[i];
+
 		if (!st->chip_config.enable) {
 				result = st->set_power_state(st, true);
 				if (result) {
@@ -2937,12 +2661,12 @@ static int accel_do_calibrate(struct inv_mpu_state *st, int enable)
 			y = (signed short)(((data[2] << 8) | data[3])*st->chip_info.multi);
 			z = (signed short)(((data[4] << 8) | data[5])*st->chip_info.multi);
 
-			sum[0] += 0 - x;
-			sum[1] += 0 - y;
-			if (z > 0)
-				sum[2] += 16383 - z;
+			sum[0] += (0 - (m[0] * x + m[1] * y + m[2] * z));
+			sum[1] += (0 - (m[3] * x + m[4] * y + m[5] * z));
+			if ((m[6] * x + m[7] * y + m[8] * z) > 0)
+				sum[2] += (16383 - (m[6] * x + m[7] * y + m[8] * z));
 			else
-				sum[2] += -16383 - z;
+				sum[2] += (-16383 - (m[6] * x + m[7] * y + m[8] * z));
 			usleep_range(10000, 11000);
 		}
 
@@ -3038,8 +2762,8 @@ static ssize_t inv_accel_raw_data_show(struct device *dev,
 	st = dev_get_drvdata(dev);
 
 	cx = st->accel_data[0] + st->cal_data[0];
-	cy = st->accel_data[1] + st->cal_data[1];
-	cz = st->accel_data[2] + st->cal_data[2];
+	cy = -(st->accel_data[1] - st->cal_data[1]);
+	cz = -(st->accel_data[2] - st->cal_data[2]);
 
 	return snprintf(buf, PAGE_SIZE, "%d, %d, %d\n", cx, cy, cz);
 }
@@ -3524,11 +3248,9 @@ static int inv_check_chip_type(struct inv_mpu_state *st,
 		memcpy(&inv_attributes[t_ind], inv_mpu6500_attributes,
 		       sizeof(inv_mpu6500_attributes));
 		t_ind += ARRAY_SIZE(inv_mpu6500_attributes);
-
-		memcpy(&inv_attributes[t_ind], inv_qshot_attributes,
-		       sizeof(inv_qshot_attributes));
-		t_ind += ARRAY_SIZE(inv_qshot_attributes);
-
+		memcpy(&inv_attributes[t_ind], inv_lcd_pos_attributes,
+		       sizeof(inv_lcd_pos_attributes));
+		t_ind += ARRAY_SIZE(inv_lcd_pos_attributes);
 	}
 
 	if (conf->has_compass) {
@@ -3712,12 +3434,6 @@ static int inv_mpu_probe(struct i2c_client *client,
 	st->client = client;
 	st->sl_handle = client->adapter;
 	st->i2c_addr = client->addr;
-	init_completion(&st->shealth.wait);
-	INIT_WORK(&st->shealth.work, inv_shealth_sched_work);
-	init_timer(&st->shealth.timer);
-	st->shealth.timer.data = (unsigned long)st;
-	st->shealth.timer.function = inv_shealth_timer_func;
-	st->shealth.step_count = 0;
 
 	result = inv_mpu_parse_dt(&st->plat_data, &client->dev);
 	if (result) {
@@ -3797,7 +3513,6 @@ static int inv_mpu_probe(struct i2c_client *client,
 	INIT_KFIFO(st->timestamps);
 	spin_lock_init(&st->time_stamp_lock);
 	mutex_init(&st->suspend_resume_lock);
-	wake_lock_init(&st->shealth.wake_lock, WAKE_LOCK_SUSPEND, "inv_iio");
 
 	result = st->set_power_state(st, false);
 	if (result) {
@@ -3919,6 +3634,19 @@ static int inv_setup_suspend_batchmode(struct iio_dev *indio_dev, bool suspend)
 		st->chip_config.enable &&
 		st->batch.on &&
 		(!st->chip_config.dmp_event_int_on)) {
+		if (!st->batch.wake_fifo_on) {
+			st->batch.overflow_on = suspend;
+			result = inv_i2c_single_write(st,
+					st->reg.user_ctrl, 0);
+			if (result)
+				return result;
+			result = inv_batchmode_setup(st);
+			if (result)
+				return result;
+			result = inv_reset_fifo(indio_dev);
+			if (result)
+				return result;
+		}
 		/* turn off data interrupt in suspend mode;turn on resume */
 		result = inv_set_interrupt_on_gesture_event(st, suspend);
 		if (result)
@@ -3929,12 +3657,6 @@ static int inv_setup_suspend_batchmode(struct iio_dev *indio_dev, bool suspend)
 }
 
 #ifdef CONFIG_PM
-/*
- * inv_mpu_resume(): resume method for this driver.
- *    This method can be modified according to the request of different
- *    customers. It basically undo everything suspend_noirq is doing
- *    and recover the chip to what it was before suspend.
- */
 static int inv_mpu_resume(struct device *dev)
 {
 	struct iio_dev *indio_dev = i2c_get_clientdata(to_i2c_client(dev));
@@ -3964,15 +3686,6 @@ static int inv_mpu_resume(struct device *dev)
 	return result;
 }
 
-/*
- * inv_mpu_suspend(): suspend method for this driver.
- *    This method can be modified according to the request of different
- *    customers. If customer want some events, such as SMD to wake up the CPU,
- *    then data interrupt should be disabled in this interrupt to avoid
- *    unnecessary interrupts. If customer want pedometer running while CPU is
- *    asleep, then pedometer should be turned on while pedometer interrupt
- *    should be turned off.
- */
 static int inv_mpu_suspend(struct device *dev)
 {
 	struct iio_dev *indio_dev = i2c_get_clientdata(to_i2c_client(dev));

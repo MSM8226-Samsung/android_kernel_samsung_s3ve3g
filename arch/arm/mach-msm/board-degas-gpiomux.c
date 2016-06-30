@@ -234,7 +234,7 @@ static struct gpiomux_setting gpio_i2c_config_tsp = {
 	.pull = GPIOMUX_PULL_NONE,
 };
 
-#if defined (CONFIG_SEC_DEGASLTE_COMMON)
+#if defined (CONFIG_SEC_MILLET_PROJECT) || defined(CONFIG_SEC_MATISSE_PROJECT)
 
 static struct gpiomux_setting sensor_gpio_i2c_config = {
 	.func = GPIOMUX_FUNC_3,
@@ -257,6 +257,15 @@ static struct gpiomux_setting irled_gpio_i2c_config = {
 	.dir = GPIOMUX_IN,
 };
 
+
+#if !defined(CONFIG_SEC_MILLET_PROJECT)
+static struct gpiomux_setting prox_irq_config = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+	.dir = GPIOMUX_IN,
+};
+#endif
 static struct gpiomux_setting grip_irq_config = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
@@ -438,6 +447,21 @@ static struct msm_gpiomux_config msm_blsp_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &hw_chk_bit_gpio_cfg,
 		},
 	},
+#if !defined (CONFIG_SEC_MILLET_PROJECT) && !defined(CONFIG_SEC_MATISSE_PROJECT)
+	{
+		.gpio      = 0,		/* BLSP1 QUP1 SPI_DATA_MOSI */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &gpio_spi_act_config,
+			[GPIOMUX_SUSPENDED] = &gpio_spi_susp_config,
+		},
+	},
+	{
+		.gpio      = 1,		/* BLSP1 QUP1 SPI_DATA_MISO */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &gpio_spi_act_config,
+			[GPIOMUX_SUSPENDED] = &gpio_spi_susp_config,
+		},
+	},
 	{
 		.gpio      = 2,		/* BLSP1 QUP1 SPI_CS1 */
 		.settings = {
@@ -452,6 +476,7 @@ static struct msm_gpiomux_config msm_blsp_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gpio_spi_susp_config,
 		},
 	},
+#endif
 #if !defined(CONFIG_SEC_MILLET_PROJECT) || !defined(CONFIG_SEC_MATISSE_PROJECT)
 	{
 		.gpio      = 14,	/* BLSP1 QUP4 I2C_SDA */
@@ -524,7 +549,7 @@ static struct msm_gpiomux_config msm_blsp_configs[] __initdata = {
 	},
 #endif
 #endif
-#if defined (CONFIG_SEC_DEGASLTE_COMMON)
+#if defined (CONFIG_SEC_MILLET_PROJECT) || defined(CONFIG_SEC_MATISSE_PROJECT)
 	{
 		.gpio      = 6,		/* BLSP1 QUP2 I2C_SDA */
 		.settings = {
@@ -542,7 +567,55 @@ static struct msm_gpiomux_config msm_blsp_configs[] __initdata = {
 #endif
 };
 
-#if defined (CONFIG_SEC_DEGASLTE_COMMON)
+#if defined (CONFIG_SEC_MILLET_PROJECT)
+
+static struct gpiomux_setting prox_irq_config = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+	.dir = GPIOMUX_IN,
+};
+
+static struct msm_gpiomux_config light_prox_config[] __initdata = {
+	{
+		.gpio      = 65,		/* PROXY IRQ */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &prox_irq_config,
+			[GPIOMUX_SUSPENDED] = &prox_irq_config,
+		},
+	},
+	{
+		.gpio      = 2,		/* BLSP1 QUP2 I2C_SDA */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &sensor_gpio_i2c_config,
+			[GPIOMUX_SUSPENDED] = &sensor_gpio_i2c_config,
+		},
+	},
+	 {
+		.gpio      = 3,		/* BLSP1 QUP2 I2C_SDA */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &sensor_gpio_i2c_config,
+			[GPIOMUX_SUSPENDED] = &sensor_gpio_i2c_config,
+		},
+	},
+};
+
+static struct msm_gpiomux_config nc_light_prox_config[] __initdata = {
+	{
+		.gpio      = 2,		/* BLSP1 QUP2 I2C_SDA */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_suspend_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+	 {
+		.gpio      = 3,		/* BLSP1 QUP2 I2C_SDA */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nc_suspend_cfg,
+			[GPIOMUX_SUSPENDED] = &nc_suspend_cfg,
+		},
+	},
+};
 
 static struct msm_gpiomux_config irled_i2c_scl_config[] __initdata = {
 	{
@@ -732,7 +805,33 @@ static struct msm_gpiomux_config msm_skuf_goodix_configs[] __initdata = {
 		},
 	},
 };
+#if !defined (CONFIG_SEC_MILLET_PROJECT) && !defined(CONFIG_SEC_MATISSE_PROJECT)
 
+static struct gpiomux_setting nfc_ldo_act_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_6MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+
+static struct gpiomux_setting nfc_ldo_sus_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_6MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+
+static struct gpiomux_setting nfc_regc_act_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_6MA,
+	.pull = GPIOMUX_PULL_UP,
+};
+
+static struct gpiomux_setting nfc_regc_sus_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+	.dir = GPIOMUX_OUT_LOW,
+};
+#endif
 static struct gpiomux_setting nfc_wake_act_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_6MA,
@@ -747,6 +846,22 @@ static struct gpiomux_setting nfc_wake_sus_cfg = {
 };
 
 static struct msm_gpiomux_config msm_skuf_nfc_configs[] __initdata = {
+#if !defined (CONFIG_SEC_MILLET_PROJECT) && !defined(CONFIG_SEC_MATISSE_PROJECT)
+	{					/*  NFC  LDO EN */
+		.gpio      = 0,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nfc_ldo_act_cfg,
+			[GPIOMUX_SUSPENDED] = &nfc_ldo_sus_cfg,
+		},
+	},
+	{					/*  NFC  REGC*/
+		.gpio      = 1,
+		.settings = {
+			[GPIOMUX_ACTIVE] = &nfc_regc_act_cfg,
+			[GPIOMUX_SUSPENDED] = &nfc_regc_sus_cfg,
+		},
+	},
+#endif
 	{					/*  NFC   WAKE */
 		.gpio      = 5,
 		.settings = {
@@ -778,7 +893,7 @@ static struct msm_gpiomux_config sd_card_det __initdata = {
 	},
 };
 
-#if defined (CONFIG_SEC_DEGASLTE_COMMON)
+#if defined (CONFIG_SEC_MILLET_PROJECT) || defined(CONFIG_SEC_MATISSE_PROJECT)
 static struct msm_gpiomux_config msm_nativesensors_configs[] __initdata = {
 	{
 		.gpio      = 66,		/* GRIP IRQ */
@@ -1526,12 +1641,14 @@ msm_gpiomux_install(msm_melfas_configs,
 	if (of_board_is_cdp() || of_board_is_mtp() || of_board_is_xpm())
 		msm_gpiomux_install(usb_otg_sw_configs,
 					ARRAY_SIZE(usb_otg_sw_configs));
-#if defined (CONFIG_SEC_DEGASLTE_COMMON)
+#if defined (CONFIG_SEC_MILLET_PROJECT)
 	msm_gpiomux_install(msm_nativesensors_configs,ARRAY_SIZE(msm_nativesensors_configs));
 	if ( system_rev >= 0 && system_rev < 3) {
+		msm_gpiomux_install(light_prox_config, ARRAY_SIZE(light_prox_config));
 		msm_gpiomux_install(irled_i2c_scl_config,
 						ARRAY_SIZE(irled_i2c_scl_config));
 	} else {
+		msm_gpiomux_install(nc_light_prox_config, ARRAY_SIZE(nc_light_prox_config));
 #if defined (CONFIG_MACH_MILLETLTE_VZW) || defined(CONFIG_SEC_MILLETWIFI_COMMON)
 		msm_gpiomux_install(irled_i2c_scl_config,
 						ARRAY_SIZE(irled_i2c_scl_config));

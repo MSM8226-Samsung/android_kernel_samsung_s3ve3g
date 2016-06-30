@@ -177,7 +177,7 @@ void mxt_tsp_register_callback(struct mxt_callbacks *cb)
 }
 #endif
 
-#if defined(CONFIG_TOUCHSCREEN_MMS252) || defined(CONFIG_TOUCHSCREEN_MMS300)
+#if defined(CONFIG_TOUCHSCREEN_MMS252)
 struct tsp_callbacks *charger_callbacks;
 struct tsp_callbacks {
         void (*inform_charger)(struct tsp_callbacks *tsp_cb, bool mode);
@@ -3337,7 +3337,7 @@ void sm5502_callback(enum cable_type_t cable_type, int attached)
 	struct power_supply *psy = power_supply_get_by_name("battery");
 	static enum cable_type_t previous_cable_type = CABLE_TYPE_NONE;
 	pr_info("%s, called : cable_type :%d \n",__func__, cable_type);
-#if defined(CONFIG_TOUCHSCREEN_MXTS) ||defined(CONFIG_TOUCHSCREEN_MXT224E) || defined(CONFIG_TOUCHSCREEN_MMS252) || defined(CONFIG_TOUCHSCREEN_MMS300)
+#if defined(CONFIG_TOUCHSCREEN_MXTS) ||defined(CONFIG_TOUCHSCREEN_MXT224E) || defined(CONFIG_TOUCHSCREEN_MMS252)
         if (charger_callbacks && charger_callbacks->inform_charger)
                 charger_callbacks->inform_charger(charger_callbacks,
                 attached);
@@ -3346,10 +3346,13 @@ void sm5502_callback(enum cable_type_t cable_type, int attached)
 	mxt_tsp_charger_infom(attached);
 #endif
 
+	if (cable_type == CABLE_TYPE_INCOMPATIBLE)
+		cable_type = CABLE_TYPE_AC;
 	set_cable_status = attached ? cable_type : CABLE_TYPE_NONE;
 
 	switch (cable_type) {
 	case CABLE_TYPE_USB:
+
 #if defined(DEBUG_STATUS)
                if (attached)
                {
@@ -3542,7 +3545,7 @@ void sm5502_callback(enum cable_type_t cable_type, int attached)
 		value.intval = POWER_SUPPLY_TYPE_USB_CDP;
 		break;
 	case CABLE_TYPE_INCOMPATIBLE:
-		value.intval = POWER_SUPPLY_TYPE_UNKNOWN;
+		value.intval = POWER_SUPPLY_TYPE_MAINS;
 		break;
 	case CABLE_TYPE_DESK_DOCK:
 		value.intval = POWER_SUPPLY_TYPE_MAINS;

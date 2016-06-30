@@ -4277,14 +4277,14 @@ static inline int bms_read_properties(struct qpnp_bms_chip *chip)
       chip->ocv_low_threshold_uv = 3600000;
       chip->ocv_high_threshold_uv = 3750000;
       chip->adjust_soc_low_threshold = 3;
-      chip->shutdown_soc_valid_limit = 70;
+      chip->shutdown_soc_valid_limit = 30;
   #elif defined(CONFIG_SEC_MILLET_PROJECT)
       chip->use_ocv_thresholds = 1;
       chip->ocv_low_threshold_uv = 3000000;
       chip->ocv_high_threshold_uv = 4050000;
       chip->low_voltage_threshold = 3250000;
       chip->adjust_soc_low_threshold = 2;
-      chip->shutdown_soc_valid_limit = 70;
+      chip->shutdown_soc_valid_limit = 30;
   #endif
 
   #if defined(CONFIG_MACH_MATISSE3G_OPEN)

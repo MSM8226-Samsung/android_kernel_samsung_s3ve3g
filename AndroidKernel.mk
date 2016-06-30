@@ -42,8 +42,7 @@ MATISSELTE_ATT_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONF
 MATISSELTE_VZW_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_MACH_MATISSELTE_VZW=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
 MATISSELTE_USC_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_MACH_MATISSELTE_USC=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
 AFYONLTE_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_SEC_AFYONLTE_COMMON=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
-ATLANTICLTE_ATT_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_MACH_ATLANTICLTE_ATT=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
-ATLANTICLTE_VZW_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_MACH_ATLANTICLTE_VZW=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
+ATLANTICLTE_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_SEC_ATLANTICLTE_COMMON=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
 ATLANTIC3G_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_SEC_ATLANTIC3G_COMMON=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
 PICASSO_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_SEC_PICASSO_PROJECT=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
 V2_PROJECT ?= $(shell $(PERL) -e '$$of = "n"; while (<>) { if (/CONFIG_SEC_V2_PROJECT=y/) { $$of = "y"; break; } } print $$of;' $(KERNEL_CONFIG))
@@ -111,11 +110,8 @@ endif
 ifeq "$(AFYONLTE_PROJECT)" "y"
 DTS_FILES = $(wildcard $(TOP)/kernel/arch/arm/boot/dts/msm8226/msm8926-sec-afyonlte*.dts)
 endif
-ifeq "$(ATLANTICLTE_ATT_PROJECT)" "y"
-DTS_FILES = $(wildcard $(TOP)/kernel/arch/arm/boot/dts/msm8226/msm8928-sec-atlanticlteatt*.dts)
-endif
-ifeq "$(ATLANTICLTE_VZW_PROJECT)" "y"
-DTS_FILES = $(wildcard $(TOP)/kernel/arch/arm/boot/dts/msm8226/msm8928-sec-atlanticltevzw*.dts)
+ifeq "$(ATLANTICLTE_PROJECT)" "y"
+DTS_FILES = $(wildcard $(TOP)/kernel/arch/arm/boot/dts/msm8226/msm8928-sec-atlanticlte*.dts)
 endif
 ifeq "$(ATLANTIC3G_PROJECT)" "y"
 DTS_FILES = $(wildcard $(TOP)/kernel/arch/arm/boot/dts/msm8226/msm8228-sec-atlantic3g*.dts)

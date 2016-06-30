@@ -1557,11 +1557,7 @@ static int __devinit fsa9485_probe(struct i2c_client *client,
 	if(poweroff_charging)
 		schedule_delayed_work(&usbsw->init_work, msecs_to_jiffies(1000));
 	else
-#ifdef CONFIG_SEC_BERLUTI_PROJECT
-		schedule_delayed_work(&usbsw->init_work, msecs_to_jiffies(100));
-#else
 		schedule_delayed_work(&usbsw->init_work, msecs_to_jiffies(3000));
-#endif
 	INIT_DELAYED_WORK(&usbsw->audio_work, fsa9485_delayed_audio);
 	schedule_delayed_work(&usbsw->audio_work, msecs_to_jiffies(20000));
 #if defined(CONFIG_VIDEO_MHL_V1) || defined(CONFIG_VIDEO_MHL_V2)

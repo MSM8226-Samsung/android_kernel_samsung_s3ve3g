@@ -44,8 +44,7 @@
 #define SET_USER_SELECT     1
 #define SET_EXCEPTION_URL   2
 #define SET_ERROR_MSG       3
-#define SET_CLOSING_TIME    4
-#define MAX_CMDS            5
+#define MAX_CMDS            4
 //  USER COMMANDS END
 
 #define FILTER_MODE_OFF                 0

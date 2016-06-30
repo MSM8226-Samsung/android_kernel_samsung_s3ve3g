@@ -247,7 +247,6 @@ static int mxt_request_gpio(struct mxt_data *data)
 static int mxt_power_onoff(struct mxt_data *data, bool enable)
 {
 	int ret = 0;
-	static struct regulator *reg_l23;
 
 #if 0
 	static struct regulator *reg_l10;
@@ -301,39 +300,6 @@ static int mxt_power_onoff(struct mxt_data *data, bool enable)
 	}
 #endif
 
-	if (!reg_l23) {
-		reg_l23 = regulator_get(NULL, "8226_l23");
-		if (IS_ERR(reg_l23)) {
-			dev_err(&data->client->dev,
-				"%s: could not get 8226_l23, rc = %ld\n",
-				__func__, PTR_ERR(reg_l23));
-			return -EINVAL;
-		}
-		ret = regulator_set_voltage(reg_l23, 1800000, 1800000);
-		if (ret) {
-			dev_err(&data->client->dev,
-				"%s: unable to set l23 voltage to 1.8V\n",
-				__func__);
-			return -EINVAL;
-		}
-	}
-	if(enable){
-		ret = regulator_enable(reg_l23);
-		if (ret) {
-			dev_err(&data->client->dev,
-			"%s: enable l23 failed, rc=%d\n",
-			__func__, ret);
-			return -EINVAL;
-		}
-	}else{
-		ret = regulator_disable(reg_l23);
-		if (ret) {
-			dev_err(&data->client->dev,
-				"%s: disable l23 failed, rc=%d\n",
-				__func__, ret);
-			return -EINVAL;
-		}
-	}
 	dev_err(&data->client->dev,
 			"%s enable(%d)\n", __func__, enable);
 	ret = gpio_direction_output(data->pdata->tsp_en, enable);

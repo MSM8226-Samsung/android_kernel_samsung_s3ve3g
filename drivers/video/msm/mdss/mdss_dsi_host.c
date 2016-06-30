@@ -1173,6 +1173,9 @@ int mdss_dsi_cmds_single_tx(struct mdss_dsi_ctrl_pdata *pdata,
 	}
 	tp->data = cmds_tx;
 	tp->len = cmd_len;
+#if defined(CONFIG_MACH_S3VE3G_EUR)
+	mdss_dsi_wait4video_eng_busy(ctrl_pdata);
+#endif
 	mdss_dsi_cmd_dma_tx(ctrl_pdata, tp);
 	kfree(cmds_tx);
 
@@ -1208,11 +1211,13 @@ static int mdss_dsi_cmd_dma_tx(struct mdss_dsi_ctrl_pdata *ctrl,
 	len = ALIGN(tp->len, 4);
 	size = ALIGN(tp->len, SZ_4K);
 
+#if !defined(CONFIG_MACH_S3VE3G_EUR)
 	tp->dmap = dma_map_single(&dsi_dev, tp->data, size, DMA_TO_DEVICE);
 	if (dma_mapping_error(&dsi_dev, tp->dmap)) {
 		pr_err("%s: dmap mapp failed\n", __func__);
 		return -ENOMEM;
 	}
+#endif
 
 	if (is_mdss_iommu_attached()) {
 		int ret = msm_iommu_map_contig_buffer(tp->dmap,
@@ -1520,8 +1525,10 @@ int mdss_dsi_cmdlist_commit(struct mdss_dsi_ctrl_pdata *ctrl, int from_mdp)
 
 	if (req->flags & CMD_REQ_RX)
 		ret = mdss_dsi_cmdlist_rx(ctrl, req);
+#if !defined(CONFIG_MACH_S3VE3G_EUR)
 	else if (req->flags & CMD_REQ_SINGLE_TX)
 		ret = mdss_dsi_cmds_single_tx(ctrl,req->cmds,req->cmds_cnt);
+#endif
 	else
 		ret = mdss_dsi_cmdlist_tx(ctrl, req);
 
