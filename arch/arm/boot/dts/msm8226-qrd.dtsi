@@ -130,13 +130,15 @@
 			"MIC BIAS1 External", "Handset Mic",
 			"AMIC2", "MIC BIAS2 External",
 			"MIC BIAS2 External", "Headset Mic",
-			"AMIC3", "MIC BIAS1 External",
+			"MIC BIAS1 External", "ANCRight Headset Mic",
 			"MIC BIAS1 External", "Analog Mic3",
 			"AMIC4", "MIC BIAS3 External",
 			"MIC BIAS3 External", "Analog Mic4";
+			"MIC BIAS2 External", "ANCRight Headset Mic",
+			"AMIC5", "MIC BIAS2 External",
 
 		qcom,cdc-mclk-gpios = <&pm8226_gpios 1 0>;
-		qcom,cdc-vdd-spkr-gpios = <&pm8226_gpios 2 0>;
+		/*qcom,cdc-vdd-spkr-gpios = <&pm8226_gpios 2 0>;*/
 		qcom,cdc-us-euro-gpios = <&msmgpio 69 0>;
 	};
 
@@ -367,9 +369,12 @@
 		};
 
 		qcom,vibrator@c000 {
-			status = "okay";
+			compatible = "qcom,qpnp-vibrator";
+			reg = <0xc000 0x100>;
+			label = "vibrator";
 			qcom,vib-timeout-ms = <15000>;
 			qcom,vib-vtg-level-mV = <3100>;
+			status = "okay";
 		};
 
 	};

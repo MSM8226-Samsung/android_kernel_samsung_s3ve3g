@@ -18,6 +18,10 @@
 		reg-names = "msm-cam";
 	};
 
+	qcom,cam_dummy {
+		compatible = "qcom,cam_dummy";
+	};
+
 	qcom,csiphy@fda0ac00 {
 		cell-index = <0>;
 		compatible = "qcom,csiphy";
@@ -104,7 +108,7 @@
 		compatible = "qcom,cpp";
 		reg = <0xfda04000 0x100>,
 		      <0xfda40000 0x200>,
-		      <0xfda18000 0x018>;
+		      <0xfda18000 0x008>;
 		reg-names = "cpp", "cpp_vbif", "cpp_hw";
 		interrupts = <0 49 0>;
 		interrupt-names = "cpp";
@@ -120,45 +124,22 @@
 		reg-names = "cci";
 		interrupts = <0 50 0>;
 		interrupt-names = "cci";
+		vcc_i2c-supply = <&pm8226_lvs1>;
 		gpios = <&msmgpio 29 0>,
 			<&msmgpio 30 0>;
 		qcom,gpio-tbl-num = <0 1>;
 		qcom,gpio-tbl-flags = <1 1>;
 		qcom,gpio-tbl-label = "CCI_I2C_DATA0",
 				      "CCI_I2C_CLK0";
-		master0: qcom,cci-master0 {
-			status = "disabled";
-		};
-		master1: qcom,cci-master1 {
-			status = "disabled";
-		};
+		qcom,hw-thigh = <20>;
+		qcom,hw-tlow = <28>;
+		qcom,hw-tsu-sto = <6>;
+		qcom,hw-tsu-sta = <7>;
+		qcom,hw-thd-dat = <13>;
+		qcom,hw-thd-sta = <11>;
+		qcom,hw-tbuf = <25>;
+		qcom,hw-scl-stretch-en = <0>;
+		qcom,hw-trdhld = <6>;
+		qcom,hw-tsp = <3>;
 	};
-};
-
-&master0 {
-	qcom,hw-thigh = <20>;
-	qcom,hw-tlow = <28>;
-	qcom,hw-tsu-sto = <21>;
-	qcom,hw-tsu-sta = <21>;
-	qcom,hw-thd-dat = <13>;
-	qcom,hw-thd-sta = <18>;
-	qcom,hw-tbuf = <25>;
-	qcom,hw-scl-stretch-en = <0>;
-	qcom,hw-trdhld = <6>;
-	qcom,hw-tsp = <3>;
-	status = "ok";
-};
-
-&master1 {
-	qcom,hw-thigh = <20>;
-	qcom,hw-tlow = <28>;
-	qcom,hw-tsu-sto = <21>;
-	qcom,hw-tsu-sta = <21>;
-	qcom,hw-thd-dat = <13>;
-	qcom,hw-thd-sta = <18>;
-	qcom,hw-tbuf = <25>;
-	qcom,hw-scl-stretch-en = <0>;
-	qcom,hw-trdhld = <6>;
-	qcom,hw-tsp = <3>;
-	status = "ok";
 };

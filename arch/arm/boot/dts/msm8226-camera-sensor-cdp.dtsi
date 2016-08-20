@@ -18,18 +18,10 @@
 		compatible = "qcom,camera-led-flash";
 		qcom,flash-type = <1>;
 		qcom,flash-source = <&pm8226_flash0 &pm8226_flash1>;
-		qcom,torch-source = <&pm8226_torch>;
 	};
 };
 
 &cci {
-
-	actuator0: qcom,actuator@6e {
-		cell-index = <3>;
-		reg = <0x6c>;
-		compatible = "qcom,actuator";
-		qcom,cci-master = <0>;
-	};
 
 	actuator1: qcom,actuator@36 {
 		cell-index = <1>;
@@ -46,7 +38,7 @@
 		qcom,csid-sd-index = <0>;
 		qcom,actuator-src = <&actuator0>;
 		qcom,led-flash-src = <&led_flash0>;
-		qcom,mount-angle = <180>;
+		qcom,mount-angle = <0>;
 		qcom,sensor-name = "ov8825";
 		cam_vdig-supply = <&pm8226_l5>;
 		cam_vana-supply = <&pm8226_l19>;
@@ -69,6 +61,28 @@
 		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
 			"CAM_RESET1",
 			"CAM_STANDBY";
+		qcom,cam-power-seq-type = "sensor_vreg",
+					  "sensor_vreg",
+					  "sensor_vreg",
+					  "sensor_vreg",
+					  "sensor_gpio",
+					  "sensor_gpio",
+					  "sensor_gpio",
+					  "sensor_gpio",
+					  "sensor_clk",
+					  "sensor_i2c_mux";
+		qcom,cam-power-seq-val = "cam_vio",
+					 "cam_vana",
+					 "cam_vdig",
+					 "cam_vaf",
+					 "sensor_gpio_standby",
+					 "sensor_gpio_reset",
+					 "sensor_gpio_standby",
+					 "sensor_gpio_reset",
+					 "sensor_cam_mclk",
+					 "none";
+		qcom,cam-power-seq-cfg-val = <0 0 0 0 0 0 1 1 24000000 0>;
+		qcom,cam-power-seq-delay = <5 5 5 15 15 40 40 40 5 0>;
 		qcom,csi-lane-assign = <0x4320>;
 		qcom,csi-lane-mask = <0x1f>;
 		qcom,sensor-position = <0>;
@@ -126,6 +140,26 @@
 		qcom,csid-sd-index = <1>;
 		qcom,mount-angle = <0>;
 		qcom,sensor-name = "ov9724";
+		qcom,cam-power-seq-type = "sensor_vreg",
+					  "sensor_vreg",
+					  "sensor_vreg",
+					  "sensor_gpio",
+					  "sensor_gpio",
+					  "sensor_gpio",
+					  "sensor_gpio",
+					  "sensor_clk",
+					  "sensor_i2c_mux";
+		qcom,cam-power-seq-val = "cam_vana",
+					 "cam_vio",
+					 "cam_vdig",
+					 "sensor_gpio_reset",
+					 "sensor_gpio_reset",
+					 "sensor_gpio_standby",
+					 "sensor_gpio_standby",
+					 "sensor_cam_mclk",
+					 "none";
+		qcom,cam-power-seq-cfg-val = <0 0 0 0 1 0 1 24000000 0>;
+		qcom,cam-power-seq-delay = <0 0 0 5 30 5 30 5 0>;
 		cam_vdig-supply = <&pm8226_l5>;
 		cam_vana-supply = <&pm8226_l19>;
 		cam_vio-supply = <&pm8226_lvs1>;

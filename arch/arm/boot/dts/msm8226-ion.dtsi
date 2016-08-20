@@ -21,6 +21,11 @@
 			qcom,ion-heap-type = "SYSTEM";
 		};
 
+		qcom,ion-heap@30 {
+			reg = <30>;
+			qcom,ion-heap-type = "IOMMUCA";
+		};
+
 		qcom,ion-heap@21 {
 			reg = <21>;
 			qcom,ion-heap-type = "SYSTEM_CONTIG";
@@ -63,7 +68,7 @@
 			compatible = "qcom,msm-ion-reserve";
 			reg = <23>;
 			qcom,heap-align = <0x1000>;
-			qcom,memory-fixed = <0x0dc00000 0x1900000>;
+			qcom,memory-fixed = <0x0d900000  0x1D00000>;
 			qcom,ion-heap-type = "CARVEOUT";
 		};
 

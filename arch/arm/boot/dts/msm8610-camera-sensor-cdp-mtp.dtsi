@@ -30,13 +30,13 @@
 		qcom,gpio-req-tbl-label = "FLASH_EN",
 			"FLASH_NOW";
 	};
-
+	/* commenting to remove the build errors
 	actuator0: qcom,actuator@6e {
 		cell-index = <3>;
 		reg = <0x6c>;
 		compatible = "qcom,actuator";
 		qcom,cci-master = <0>;
-	};
+	};	*/
 
 	eeprom0: qcom,eeprom@6a {
 		cell-index = <0>;
